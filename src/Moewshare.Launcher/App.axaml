@@ -1,0 +1,18 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Launcher.ViewModels"
+             xmlns:views="using:Moewshare.Launcher.Views"
+             x:Class="Moewshare.Launcher.App"
+             RequestedThemeVariant="Light">
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:HomeViewModel"><views:HomeView/></DataTemplate>
+    <DataTemplate DataType="vm:ProjectsViewModel"><views:ProjectsView/></DataTemplate>
+    <DataTemplate DataType="vm:NewProjectViewModel"><views:NewProjectView/></DataTemplate>
+    <DataTemplate DataType="vm:LibraryViewModel"><views:LibraryView/></DataTemplate>
+    <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView/></DataTemplate>
+  </Application.DataTemplates>
+  <Application.Styles>
+    <FluentTheme />
+    <StyleInclude Source="avares://Moewshare.Launcher/Styles/Theme.axaml"/>
+  </Application.Styles>
+</Application>

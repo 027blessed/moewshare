@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Editor.ViewModels"
+             xmlns:v="using:Moewshare.Editor.Views"
+             x:Class="Moewshare.Editor.Views.ViewportView"
+             x:DataType="vm:ViewportPanelVM">
+  <DockPanel>
+    <!-- Viewport Toolbar -->
+    <Border DockPanel.Dock="Top" Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="8,4">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+          <Button Classes="soft" Content="3D" Click="OnPerspectiveClick" ToolTip.Tip="3D Перспектива"/>
+          <Button Classes="soft" Content="🗺️ Изометрия" Click="OnIsometricClick" ToolTip.Tip="Изометрический вид (45°)"/>
+          <Button Classes="soft" Content="📐 Сверху" Click="OnTopClick" ToolTip.Tip="Вид сверху"/>
+          <Button Classes="soft" Content="🎮 Спереди (2D)" Click="OnFrontClick" ToolTip.Tip="Вид спереди (2D)"/>
+          <Button Classes="soft" Content="🎯 Фокус (F)" Command="{Binding Editor.FocusOnSelectedCommand}" ToolTip.Tip="Сфокусировать камеру на объекте"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="4">
+          <Button Classes="soft" Content="✋ Q" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="select" ToolTip.Tip="Режим выбора (Q)"/>
+          <Button Classes="soft" Content="↔ W" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="translate" ToolTip.Tip="Режим перемещения (W)"/>
+          <Button Classes="soft" Content="🔄 E" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="rotate" ToolTip.Tip="Режим вращения (E)"/>
+          <Button Classes="soft" Content="⤢ R" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="scale" ToolTip.Tip="Режим масштабирования (R)"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- 3D Scene Viewport -->
+    <Border Margin="2" CornerRadius="12" ClipToBounds="True" BorderBrush="#F1D9DB" BorderThickness="1">
+      <v:ScenePreview x:Name="PreviewControl"/>
+    </Border>
+  </DockPanel>
+</UserControl>

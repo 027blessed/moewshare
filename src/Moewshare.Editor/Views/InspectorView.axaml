@@ -1,0 +1,736 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Editor.ViewModels"
+             x:Class="Moewshare.Editor.Views.InspectorView"
+             x:DataType="vm:InspectorPanelVM">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="12,12,16,80">
+    <Panel>
+      <!-- ================= 1. SELECTED OBJECT INSPECTOR ================= -->
+      <StackPanel IsVisible="{Binding Editor.HasSelection}" Spacing="10">
+
+        <!-- Multi-selection batch panel -->
+        <Border Background="#FCE8EC" BorderBrush="#F7CDD5" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding Editor.HasMultipleSelection}">
+          <StackPanel Spacing="6">
+            <DockPanel>
+              <TextBlock Text="👥 Множественный выбор" FontWeight="Bold" FontSize="13" Foreground="#4A2929" VerticalAlignment="Center"/>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.SelectionCount, StringFormat='{}{0} шт.'}" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Перемещайте стрелки гизмо, чтобы двигать все выбранные объекты вместе." FontSize="11" Opacity="0.75" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+              <Button Classes="soft" Content="📋 Дублировать все" Command="{Binding Editor.DuplicateSelectedCommand}"/>
+              <Button Classes="soft" Content="🗑️ Удалить все" Command="{Binding Editor.DeleteSelectedCommand}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Object Header with Add Component Button -->
+        <Border Background="#FCE8EC" CornerRadius="10" Padding="10">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Classes="tool" Content="{Binding Editor.Selected.LockIcon}"
+                        ToolTip.Tip="{Binding Editor.Selected.LockTooltip}"
+                        Command="{Binding Editor.Selected.ToggleLockCommand}"
+                        Width="28" Height="28" Padding="0" FontSize="12"/>
+                <Button Classes="tool" Content="{Binding Editor.Selected.VisibilityIcon}"
+                        ToolTip.Tip="{Binding Editor.Selected.VisibilityTooltip}"
+                        Command="{Binding Editor.Selected.ToggleVisibilityCommand}"
+                        Width="28" Height="28" Padding="0" FontSize="12"/>
+                <Border Background="#F1D9DB" CornerRadius="6" Padding="6,2" VerticalAlignment="Center">
+                  <TextBlock Text="{Binding Editor.Selected.Type}" Opacity="0.8" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+                </Border>
+              </StackPanel>
+              <TextBox Text="{Binding Editor.Selected.Name}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <!-- Locked Notice Banner -->
+            <Border Background="#FFF3CD" BorderBrush="#FFEEBA" BorderThickness="1" CornerRadius="8" Padding="8,4"
+                    IsVisible="{Binding Editor.Selected.IsLocked}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="tool" Content="Разблокировать 🔓"
+                        Command="{Binding Editor.Selected.ToggleLockCommand}" FontSize="11" Padding="4,2"/>
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="🔒" FontSize="12"/>
+                  <TextBlock Text="Объект заблокирован от изменений" FontSize="11" FontWeight="Bold" Foreground="#856404"/>
+                </StackPanel>
+              </DockPanel>
+            </Border>
+
+            <!-- Hidden Notice Banner -->
+            <Border Background="#E2E3E5" BorderBrush="#D6D8DB" BorderThickness="1" CornerRadius="8" Padding="8,4"
+                    IsVisible="{Binding !Editor.Selected.IsVisible}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="tool" Content="Показать 👁"
+                        Command="{Binding Editor.Selected.ToggleVisibilityCommand}" FontSize="11" Padding="4,2"/>
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                  <TextBlock Text="🚫" FontSize="12"/>
+                  <TextBlock Text="Объект скрыт на сцене" FontSize="11" FontWeight="Bold" Foreground="#383D41"/>
+                </StackPanel>
+              </DockPanel>
+            </Border>
+
+            <!-- Prominent "+ Добавить компонент" button right at the top of Inspector! -->
+            <Button Classes="primary" Content="🧩 + Добавить компонент" HorizontalAlignment="Stretch"
+                    Command="{Binding Editor.OpenAddComponentCommand}"
+                    ToolTip.Tip="Открыть окно со всеми компонентами (коллизия, платформер, топ-даун, спрайт, вращение)"/>
+
+            <!-- Object Event Graph Button -->
+            <Button Classes="soft" Content="{Binding Editor.Selected.EventGraphBadge}" HorizontalAlignment="Stretch"
+                    Command="{Binding Editor.OpenSelectedObjectEventGraphCommand}"
+                    ToolTip.Tip="Открыть индивидуальный визуальный граф логики для этого объекта"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Top Add Component Popup Card (appears immediately at the top when opened!) -->
+        <Border Background="#FFF8F9" BorderBrush="#FF4B72" BorderThickness="1.5" CornerRadius="12" Padding="12"
+                IsVisible="{Binding Editor.IsAddComponentOpen}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖" Command="{Binding Editor.CloseAddComponentCommand}"
+                      ToolTip.Tip="Закрыть каталог компонентов"/>
+              <TextBlock Text="📦 Каталог компонентов" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <TextBox Text="{Binding Editor.ComponentSearch}" Watermark="🔍 Поиск компонента (коллизия, платформер, спрайт)..."/>
+
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="soft" Content="🌟 Все" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Все" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="⚡ Физика" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Физика" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="🎮 Геймплей" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Геймплей" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="🎨 Графика" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Графика" Margin="0,0,4,4"/>
+            </WrapPanel>
+
+            <ItemsControl ItemsSource="{Binding Editor.FilteredComponents}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:ComponentItemVM">
+                  <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,3">
+                    <DockPanel>
+                      <Button DockPanel.Dock="Right" Classes="primary" Content="+ Добавить"
+                              Command="{Binding AddThisCommand}" VerticalAlignment="Center"/>
+                      <StackPanel Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Text="{Binding Icon}" FontSize="13" VerticalAlignment="Center"/>
+                          <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                          <Border Background="#FCE8EC" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Category}" FontSize="9" FontWeight="Medium" Foreground="#4A2929"/>
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.7" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= UI CANVAS SETTINGS ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12"
+                IsVisible="{Binding Editor.Selected.IsCanvas}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <TextBlock Text="🖼️ Экранный интерфейс (UI Canvas)" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Холст масштабирует элементы интерфейса (кнопки, надписи, жизни, очки) под экран выбранного устройства."
+                       FontSize="11" Opacity="0.75" TextWrapping="Wrap"/>
+
+            <TextBlock Text="Целевое устройство (Пресеты):" FontSize="11" FontWeight="Bold" Margin="0,4,0,0"/>
+            <UniformGrid Columns="2" Margin="0,2,0,4">
+              <Button Classes="soft" Content="🖥️ ПК (16:9)" Command="{Binding Editor.SetCanvasPresetCommand}" CommandParameter="pc_16_9" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="📱 Телефон (9:16)" Command="{Binding Editor.SetCanvasPresetCommand}" CommandParameter="mobile_9_16" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="📱 Горизонт (19.5:9)" Command="{Binding Editor.SetCanvasPresetCommand}" CommandParameter="mobile_19_9" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="📟 Планшет (4:3)" Command="{Binding Editor.SetCanvasPresetCommand}" CommandParameter="tablet_4_3" Margin="0,0,4,4"/>
+            </UniformGrid>
+
+            <TextBlock Text="Базовое разрешение (Reference Resolution px):" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <TextBox Text="{Binding Editor.Selected.ScaleX}" Watermark="Ширина"/>
+              <TextBox Grid.Column="1" Text="{Binding Editor.Selected.ScaleY}" Watermark="Высота"/>
+            </Grid>
+
+            <TextBlock Text="Режим масштабирования UI:" FontSize="11" Opacity="0.7"/>
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.UiScaleModeList}" SelectedItem="{Binding Editor.Selected.UiScaleMode}"/>
+
+            <Separator Background="#F1D9DB" Margin="0,4"/>
+
+            <TextBlock Text="Быстрое добавление элементов на этот Canvas:" FontSize="11" FontWeight="Bold"/>
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="primary" Content="📝 + Текст" Command="{Binding Editor.AddTextToSelectedCanvasCommand}" Margin="0,0,4,4"/>
+              <Button Classes="primary" Content="🔘 + Кнопка" Command="{Binding Editor.AddButtonToSelectedCanvasCommand}" Margin="0,0,4,4"/>
+              <Button Classes="primary" Content="🖼️ + Картинка" Command="{Binding Editor.AddImageToSelectedCanvasCommand}" Margin="0,0,4,4"/>
+            </WrapPanel>
+
+            <TextBlock Text="Элементы внутри этого Canvas:" FontSize="11" Opacity="0.7" Margin="0,4,0,0"/>
+            <ItemsControl ItemsSource="{Binding Editor.SelectedCanvasChildren}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border Background="#FFF4F3" BorderBrush="#FCE8EC" BorderThickness="1" CornerRadius="6" Padding="8,4" Margin="0,2">
+                    <DockPanel>
+                      <Button DockPanel.Dock="Right" Classes="tool" Content="Выбрать"
+                              Command="{Binding SelectThisCommand}"/>
+                      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding HierarchyPrefix}" Opacity="0.8"/>
+                        <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= UI TEXT SETTINGS ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding Editor.Selected.IsUiText}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="📝 Текст интерфейса (UI Text)" Classes="h"/>
+            <TextBlock Text="Текст надписи:" FontSize="11" Opacity="0.7"/>
+            <TextBox Text="{Binding Editor.Selected.UiText}"/>
+            <TextBlock Text="Размер шрифта (px):" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,40">
+              <Slider Minimum="10" Maximum="72" Value="{Binding Editor.Selected.UiFontSize}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Editor.Selected.UiFontSize}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+            </Grid>
+            <TextBlock Text="Цвет текста:" FontSize="11" Opacity="0.7"/>
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Width="26" Height="26" CornerRadius="6" Margin="0,0,8,0"
+                      BorderBrush="#F1D9DB" BorderThickness="1.5" Background="{Binding Editor.Selected.Color}"/>
+              <TextBox Text="{Binding Editor.Selected.Color}" Watermark="#RRGGBB" VerticalAlignment="Center"/>
+            </DockPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= UI BUTTON SETTINGS ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding Editor.Selected.IsUiButton}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="🔘 Кнопка интерфейса (UI Button)" Classes="h"/>
+            <TextBlock Text="Текст на кнопке:" FontSize="11" Opacity="0.7"/>
+            <TextBox Text="{Binding Editor.Selected.UiText}"/>
+            <TextBlock Text="Действие при нажатии (ПК / Тап на телефоне):" FontSize="11" Opacity="0.7"/>
+            <ComboBox HorizontalAlignment="Stretch" SelectedItem="{Binding Editor.Selected.UiAction}">
+              <ComboBoxItem Content="jump" Tag="jump"/>
+              <ComboBoxItem Content="restart" Tag="restart"/>
+              <ComboBoxItem Content="alert" Tag="alert"/>
+            </ComboBox>
+            <TextBlock Text="Цвет кнопки:" FontSize="11" Opacity="0.7"/>
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Width="26" Height="26" CornerRadius="6" Margin="0,0,8,0"
+                      BorderBrush="#F1D9DB" BorderThickness="1.5" Background="{Binding Editor.Selected.Color}"/>
+              <TextBox Text="{Binding Editor.Selected.Color}" Watermark="#RRGGBB" VerticalAlignment="Center"/>
+            </DockPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= UI POSITION / SIZE ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding Editor.Selected.IsUiComponent}">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Позиция и размер на экране" Classes="h"/>
+            <TextBlock Text="Позиция (Смещение X / Y от центра экрана):" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <TextBox Text="{Binding Editor.Selected.PosX}" Watermark="X"/>
+              <TextBox Grid.Column="1" Text="{Binding Editor.Selected.PosY}" Watermark="Y"/>
+            </Grid>
+            <TextBlock Text="Ширина / Высота (px):" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+              <TextBox Text="{Binding Editor.Selected.ScaleX}" Watermark="Ширина"/>
+              <TextBox Grid.Column="1" Text="{Binding Editor.Selected.ScaleY}" Watermark="Высота"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= WORLD 3D / 2D OBJECT TRANSFORM ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding Editor.Selected.IsWorldObject}"
+                IsEnabled="{Binding Editor.Selected.IsNotLocked}">
+          <StackPanel Spacing="6">
+            <TextBlock Text="Трансформация" Classes="h"/>
+
+            <TextBlock Text="Позиция (X / Y / Z)" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+              <TextBox Text="{Binding Editor.Selected.PosX}"/>
+              <TextBox Grid.Column="1" Text="{Binding Editor.Selected.PosY}"/>
+              <TextBox Grid.Column="2" Text="{Binding Editor.Selected.PosZ}"/>
+            </Grid>
+
+            <TextBlock Text="Поворот (°) (X / Y / Z)" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+              <TextBox Text="{Binding Editor.Selected.RotX}"/>
+              <TextBox Grid.Column="1" Text="{Binding Editor.Selected.RotY}"/>
+              <TextBox Grid.Column="2" Text="{Binding Editor.Selected.RotZ}"/>
+            </Grid>
+            <!-- Quick rotation buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,2,0,4">
+              <Button Classes="tool" Content="↺ -15°" Command="{Binding Editor.RotateSelectedZCommand}" CommandParameter="-15" ToolTip.Tip="Повернуть Z на -15°"/>
+              <Button Classes="tool" Content="↻ +15°" Command="{Binding Editor.RotateSelectedZCommand}" CommandParameter="15" ToolTip.Tip="Повернуть Z на +15°"/>
+              <Button Classes="tool" Content="90°" Command="{Binding Editor.RotateSelectedZCommand}" CommandParameter="90" ToolTip.Tip="Повернуть Z на 90°"/>
+              <Button Classes="tool" Content="0° Сброс" Command="{Binding Editor.ResetSelectedRotationCommand}" ToolTip.Tip="Сбросить поворот в 0°"/>
+            </StackPanel>
+
+            <TextBlock Text="Масштаб (X / Y / Z)" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+              <TextBox Text="{Binding Editor.Selected.ScaleX}"/>
+              <TextBox Grid.Column="1" Text="{Binding Editor.Selected.ScaleY}"/>
+              <TextBox Grid.Column="2" Text="{Binding Editor.Selected.ScaleZ}"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= PARENTING / HIERARCHY ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding !Editor.Selected.IsCanvas}">
+          <StackPanel Spacing="6">
+            <DockPanel>
+              <TextBlock Text="🔗 Привязка к родителю (как в Unity)" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Привязан к объекту:" FontSize="11" Opacity="0.7"/>
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.CurrentParentOptions}"
+                      SelectedItem="{Binding Editor.SelectedParentOption}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Title}"/>
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+              <Button Classes="soft" Content="✖ Отвязать (в корень сцены)"
+                      Command="{Binding Editor.UnparentSelectedCommand}"
+                      IsEnabled="{Binding Editor.Selected.HasParent}"/>
+            </StackPanel>
+            <TextBlock Text="Дочерний объект перемещается и вращается вместе со своим родителем как единое целое. Перетаскивайте мышкой в иерархии, чтобы привязать!"
+                       FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= COLOR & MATERIAL (World Objects & UI Images) ================= -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="10"
+                IsVisible="{Binding Editor.Selected.IsWorldObject}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="Цвет и Материал" Classes="h"/>
+
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Width="32" Height="32" CornerRadius="8" Margin="0,0,8,0"
+                      BorderBrush="#F1D9DB" BorderThickness="1.5" Background="{Binding Editor.Selected.Color}"/>
+              <TextBox Text="{Binding Editor.Selected.Color}" Watermark="#RRGGBB" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <!-- Pipette & Palette Toggle Buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Classes="soft" Classes.active="{Binding Editor.IsEyeDropperActive}"
+                      Command="{Binding Editor.ToggleEyeDropperCommand}"
+                      ToolTip.Tip="Режим пипетки: нажмите и кликните по любому объекту на сцене для копирования цвета">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="🧪"/>
+                  <TextBlock Text="Пипетка"/>
+                </StackPanel>
+              </Button>
+              <Button Classes="soft" Command="{Binding Editor.ToggleColorPaletteCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <TextBlock Text="🎨"/>
+                  <TextBlock Text="Палитра"/>
+                </StackPanel>
+              </Button>
+            </StackPanel>
+
+            <!-- Expanded Color Palette & Sliders -->
+            <StackPanel IsVisible="{Binding Editor.IsColorPaletteOpen}" Spacing="6" Margin="0,4,0,0">
+              <TextBlock Text="Быстрые цвета палитры:" FontSize="11" Opacity="0.7"/>
+              <WrapPanel Orientation="Horizontal">
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#FFF0F5" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#FFF0F5" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#FFB6C1" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#FFB6C1" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#FF69B4" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#FF69B4" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#F7CDD5" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#F7CDD5" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#E9A9B8" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#E9A9B8" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#E05263" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#E05263" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#77DD77" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#77DD77" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#2ECC71" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#2ECC71" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#AEC6CF" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#AEC6CF" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#3498DB" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#3498DB" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#F1C40F" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#F1C40F" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#E67E22" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#E67E22" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#C99A7A" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#C99A7A" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#B39DDB" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#B39DDB" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#FFFFFF" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#FFFFFF" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+                <Button Classes="tool" Click="OnColorPresetClick" Tag="#2C3E50" Margin="2">
+                  <Border Width="22" Height="22" CornerRadius="11" Background="#2C3E50" BorderBrush="#E0C0C5" BorderThickness="1"/>
+                </Button>
+              </WrapPanel>
+
+              <!-- RGB Sliders -->
+              <Grid ColumnDefinitions="20,*,40" RowDefinitions="Auto,Auto,Auto" RowSpacing="4" Margin="0,4,0,0">
+                <TextBlock Text="R" Foreground="#E74C3C" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Slider Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Editor.Selected.ColorR}" Margin="4,0"/>
+                <TextBlock Grid.Column="2" Text="{Binding Editor.Selected.ColorR}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+
+                <TextBlock Grid.Row="1" Text="G" Foreground="#2ECC71" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Slider Grid.Row="1" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Editor.Selected.ColorG}" Margin="4,0"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding Editor.Selected.ColorG}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+
+                <TextBlock Grid.Row="2" Text="B" Foreground="#3498DB" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Slider Grid.Row="2" Grid.Column="1" Minimum="0" Maximum="255" Value="{Binding Editor.Selected.ColorB}" Margin="4,0"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Editor.Selected.ColorB}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+              </Grid>
+            </StackPanel>
+
+            <Separator Background="#F1D9DB" Margin="0,4"/>
+
+            <!-- Texture Section -->
+            <TextBlock Text="Текстура / Спрайт:" Classes="h"/>
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.AvailableTextures}" SelectedItem="{Binding Editor.Selected.Texture}"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Classes="soft" Content="📁 Выбрать файл…" Command="{Binding Editor.ChooseTextureForSelectedCommand}"/>
+              <Button Classes="soft" Content="✖ Очистить" Command="{Binding Editor.ClearTextureForSelectedCommand}" IsEnabled="{Binding Editor.Selected.Texture, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ================= COMPONENTS SYSTEM ================= -->
+        <!-- Component: 2D Platformer Controller -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12"
+                IsVisible="{Binding Editor.Selected.HasPlatformerComponent}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖"
+                      Command="{Binding Editor.Selected.RemoveComponentCommand}" CommandParameter="PlatformerController"
+                      ToolTip.Tip="Удалить компонент"/>
+              <TextBlock Text="🏃 2D Platformer Controller" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Скорость бега:" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,40">
+              <Slider Minimum="2" Maximum="25" Value="{Binding Editor.Selected.Speed}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Editor.Selected.Speed, StringFormat='{}{0:0.0}'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+            </Grid>
+            <TextBlock Text="Сила прыжка:" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,40">
+              <Slider Minimum="4" Maximum="30" Value="{Binding Editor.Selected.JumpForce}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Editor.Selected.JumpForce, StringFormat='{}{0:0.0}'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+            </Grid>
+            <TextBlock Text="Гравитация:" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,40">
+              <Slider Minimum="10" Maximum="60" Value="{Binding Editor.Selected.Gravity}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Editor.Selected.Gravity, StringFormat='{}{0:0.0}'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Component: Top-Down Controller -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12"
+                IsVisible="{Binding Editor.Selected.HasTopDownComponent}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖"
+                      Command="{Binding Editor.Selected.RemoveComponentCommand}" CommandParameter="TopDownController"
+                      ToolTip.Tip="Удалить компонент"/>
+              <TextBlock Text="🕹️ Top-Down Controller" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Скорость передвижения:" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,40">
+              <Slider Minimum="2" Maximum="20" Value="{Binding Editor.Selected.Speed}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Editor.Selected.Speed, StringFormat='{}{0:0.0}'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Component: Spin -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12"
+                IsVisible="{Binding Editor.Selected.HasSpinComponent}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖"
+                      Command="{Binding Editor.Selected.RemoveComponentCommand}" CommandParameter="Spin"
+                      ToolTip.Tip="Удалить компонент"/>
+              <TextBlock Text="🔄 Spin (Вращение)" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Скорость вращения (град/сек):" FontSize="11" Opacity="0.7"/>
+            <Grid ColumnDefinitions="*,40">
+              <Slider Minimum="-360" Maximum="360" Value="{Binding Editor.Selected.SpinSpeed}"/>
+              <TextBlock Grid.Column="1" Text="{Binding Editor.Selected.SpinSpeed, StringFormat='{}{0:0}'}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="11"/>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Component: Collider -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12"
+                IsVisible="{Binding Editor.Selected.HasBoxColliderComponent}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖"
+                      Command="{Binding Editor.Selected.RemoveComponentCommand}" CommandParameter="BoxCollider"
+                      ToolTip.Tip="Удалить компонент"/>
+              <TextBlock Text="🧱 Box Collider (Коллизия)" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <CheckBox Content="Твёрдый объект (Solid / Непроходимый)" IsChecked="{Binding Editor.Selected.Solid}"/>
+            <CheckBox Content="Сквозной триггер (IsTrigger: обнаружение без преграды)" IsChecked="{Binding Editor.Selected.IsTrigger}"/>
+          </StackPanel>
+        </Border>
+
+        <!-- Component: 2D Sprite Renderer -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12"
+                IsVisible="{Binding Editor.Selected.HasSpriteRendererComponent}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖"
+                      Command="{Binding Editor.Selected.RemoveComponentCommand}" CommandParameter="SpriteRenderer"
+                      ToolTip.Tip="Удалить компонент"/>
+              <TextBlock Text="🖼️ 2D Sprite Renderer" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Text="Текстура спрайта (PNG):" FontSize="11" Opacity="0.7"/>
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.AvailableTextures}" SelectedItem="{Binding Editor.Selected.Texture}"/>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Button Classes="primary" Content="📁 Загрузить свой PNG…" Command="{Binding Editor.ChooseSpriteForSelectedCommand}"/>
+              <Button Classes="soft" Content="✖ Очистить" Command="{Binding Editor.ClearTextureForSelectedCommand}"/>
+            </StackPanel>
+            <CheckBox Content="👁️ Биллборд (всегда лицом к камере)" IsChecked="{Binding Editor.Selected.Billboard}"/>
+            <Border Background="#FFF4F3" CornerRadius="6" Padding="6,4">
+              <TextBlock Text="💡 Прозрачный фон PNG учитывается автоматически. Круглые спрайты и вырезанные силуэты отображаются с чистыми прозрачными краями!"
+                         FontSize="10.5" Opacity="0.75" TextWrapping="Wrap"/>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <!-- Add Component Button -->
+        <Button Classes="primary" Content="+ Добавить компонент" HorizontalAlignment="Stretch"
+                Command="{Binding Editor.OpenAddComponentCommand}" Margin="0,4"/>
+
+        <!-- Add Component Popup Card -->
+        <Border Background="#FFF8F9" BorderBrush="#FF4B72" BorderThickness="1.5" CornerRadius="12" Padding="12"
+                IsVisible="{Binding Editor.IsAddComponentOpen}">
+          <StackPanel Spacing="8">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="tool" Content="✖" Command="{Binding Editor.CloseAddComponentCommand}"
+                      ToolTip.Tip="Закрыть"/>
+              <TextBlock Text="📦 Добавить компонент" Classes="h" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <TextBox Text="{Binding Editor.ComponentSearch}" Watermark="🔍 Поиск компонента (коллизия, платформер, спрайт)..."/>
+
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="soft" Content="🌟 Все" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Все" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="⚡ Физика" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Физика" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="🎮 Геймплей" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Геймплей" Margin="0,0,4,4"/>
+              <Button Classes="soft" Content="🎨 Графика" Command="{Binding Editor.SelectComponentCategoryCommand}" CommandParameter="Графика" Margin="0,0,4,4"/>
+            </WrapPanel>
+
+            <ItemsControl ItemsSource="{Binding Editor.FilteredComponents}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="vm:ComponentItemVM">
+                  <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="8" Padding="8" Margin="0,3">
+                    <DockPanel>
+                      <Button DockPanel.Dock="Right" Classes="primary" Content="+ Добавить"
+                              Command="{Binding AddThisCommand}" VerticalAlignment="Center"/>
+                      <StackPanel Spacing="2" VerticalAlignment="Center" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock Text="{Binding Icon}" FontSize="13" VerticalAlignment="Center"/>
+                          <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" VerticalAlignment="Center"/>
+                          <Border Background="#FCE8EC" CornerRadius="4" Padding="4,1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Category}" FontSize="9" FontWeight="Medium" Foreground="#4A2929"/>
+                          </Border>
+                        </StackPanel>
+                        <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.7" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+        <!-- Actions -->
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+          <Button Classes="soft" Content="📋 Дублировать" Command="{Binding Editor.DuplicateSelectedCommand}"/>
+          <Button Classes="soft" Content="🗑️ Удалить объект" Command="{Binding Editor.DeleteSelectedCommand}"/>
+        </StackPanel>
+      </StackPanel>
+
+      <!-- ================= 2. GLOBAL SCENE & CAMERA SETTINGS (Shown automatically when empty space clicked!) ================= -->
+      <StackPanel IsVisible="{Binding !Editor.HasSelection}" Spacing="10">
+
+        <Border Background="#FCE8EC" CornerRadius="10" Padding="12">
+          <DockPanel>
+            <TextBlock Text="🌐" FontSize="22" VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <StackPanel Spacing="2">
+              <TextBlock Text="Настройки сцены и камеры" FontWeight="Bold" FontSize="14" Foreground="#4A2929"/>
+              <TextBlock Text="Кликните по любому объекту на сцене для редактирования его свойств" FontSize="11" Opacity="0.7"/>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+
+        <!-- Camera Settings Box -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12">
+          <StackPanel Spacing="10">
+            <DockPanel>
+              <Border DockPanel.Dock="Right" Background="#FFE6EA" CornerRadius="8" Padding="6,2">
+                <TextBlock Text="{Binding Editor.CameraMode}" FontSize="10" FontWeight="Bold" Foreground="#4A2929"/>
+              </Border>
+              <TextBlock Text="🎥 Игровая Камера" Classes="h"/>
+            </DockPanel>
+
+            <!-- Quick Presets -->
+            <TextBlock Text="Быстрые пресеты камеры:" FontSize="11" Opacity="0.7"/>
+            <UniformGrid Columns="2" Rows="2">
+              <Button Classes="soft" Content="🎮 2D Сбоку" Command="{Binding Editor.SetPresetSide2DCommand}" Margin="2"
+                      ToolTip.Tip="2D вид сбоку (угол 0°). Идеально для платформеров и 2D аркад." HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              <Button Classes="soft" Content="🗺️ Изометрия" Command="{Binding Editor.SetPresetIsometricCommand}" Margin="2"
+                      ToolTip.Tip="Изометрический вид (угол 45°). Идеально для RPG и стратегий." HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              <Button Classes="soft" Content="📐 Сверху (90°)" Command="{Binding Editor.SetPresetTopDownCommand}" Margin="2"
+                      ToolTip.Tip="Строгий вид сверху вниз (угол 90°)." HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              <Button Classes="soft" Content="🎥 3D Экшен" Command="{Binding Editor.SetPresetFollow3DCommand}" Margin="2"
+                      ToolTip.Tip="3D камера от третьего лица." HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+            </UniformGrid>
+
+            <Separator Background="#F1D9DB" Margin="0,2"/>
+
+            <TextBlock Text="Режим камеры:" FontSize="11" Opacity="0.7"/>
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.CameraList}" SelectedItem="{Binding Editor.CameraMode}"/>
+
+            <!-- Pitch (Tilt Angle) Slider -->
+            <StackPanel Spacing="2">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.CameraPitch, StringFormat='{}{0:0}°'}" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+                <TextBlock Text="Угол наклона (Pitch):" FontSize="11" Opacity="0.7"/>
+              </DockPanel>
+              <Slider Minimum="0" Maximum="90" Value="{Binding Editor.CameraPitch}"/>
+              <TextBlock Text="0° = сбоку / 2D  •  45° = изометрия  •  90° = строго сверху" FontSize="10" Opacity="0.6"/>
+            </StackPanel>
+
+            <!-- Yaw (Rotation) Slider -->
+            <StackPanel Spacing="2">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.CameraYaw, StringFormat='{}{0:0}°'}" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+                <TextBlock Text="Поворот вокруг сцены (Yaw):" FontSize="11" Opacity="0.7"/>
+              </DockPanel>
+              <Slider Minimum="0" Maximum="360" Value="{Binding Editor.CameraYaw}"/>
+            </StackPanel>
+
+            <!-- Offset Y Slider -->
+            <StackPanel Spacing="2">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.CameraOffsetY, StringFormat='{}{0:0}'}" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+                <TextBlock Text="Высота / Смещение Y:" FontSize="11" Opacity="0.7"/>
+              </DockPanel>
+              <Slider Minimum="-15" Maximum="30" Value="{Binding Editor.CameraOffsetY}"/>
+            </StackPanel>
+
+            <!-- Zoom Slider -->
+            <StackPanel Spacing="2">
+              <DockPanel>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.CameraZoom, StringFormat='{}{0:0}'}" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+                <TextBlock Text="Масштаб / Зум камеры:" FontSize="11" Opacity="0.7"/>
+              </DockPanel>
+              <Slider Minimum="4" Maximum="40" Value="{Binding Editor.CameraZoom}"/>
+            </StackPanel>
+
+            <!-- TopDown Movement Plane Mode -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="Плоскость ходьбы Top-Down:" FontSize="11" Opacity="0.7"/>
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.MovePlaneList}" SelectedItem="{Binding Editor.CameraMovePlane}"/>
+              <TextBlock Text="Auto = автоматически по камере. xy = 2D экран (W/S ходит Вверх/Вниз). xz = 3D пол."
+                         FontSize="10" Opacity="0.6" TextWrapping="Wrap"/>
+            </StackPanel>
+
+            <Separator Background="#F1D9DB" Margin="0,2"/>
+
+            <!-- Camera Follow Settings -->
+            <CheckBox Content="Следить за объектом / игроком" IsChecked="{Binding Editor.CameraFollow}"/>
+
+            <StackPanel IsVisible="{Binding Editor.CameraFollow}" Spacing="4">
+              <TextBlock Text="Цель для слежения камеры:" FontSize="11" Opacity="0.7"/>
+              <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Editor.Objects}" SelectedItem="{Binding Editor.CameraFollowTarget}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate>
+                    <TextBlock Text="{Binding Name}"/>
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock Text="Если цель не выбрана, камера автоматически следит за объектом игрока."
+                         FontSize="10" Opacity="0.6" TextWrapping="Wrap"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Background Color Box -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="🎨 Фон и цвет мира" Classes="h"/>
+
+            <DockPanel>
+              <Border DockPanel.Dock="Left" Width="32" Height="32" CornerRadius="8" Margin="0,0,8,0"
+                      BorderBrush="#F1D9DB" BorderThickness="1.5" Background="{Binding Editor.Background}"/>
+              <TextBox Text="{Binding Editor.Background}" Watermark="#RRGGBB" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <TextBlock Text="Быстрые темы фона:" FontSize="11" Opacity="0.7"/>
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="tool" Click="OnColorPresetClick" Tag="#FFF4F3" Margin="2" ToolTip.Tip="Нежно-розовый (по умолчанию)">
+                <Border Width="24" Height="24" CornerRadius="12" Background="#FFF4F3" BorderBrush="#E0C0C5" BorderThickness="1"/>
+              </Button>
+              <Button Classes="tool" Click="OnColorPresetClick" Tag="#E8F8F5" Margin="2" ToolTip.Tip="Мятный рассвет">
+                <Border Width="24" Height="24" CornerRadius="12" Background="#E8F8F5" BorderBrush="#B2DFDB" BorderThickness="1"/>
+              </Button>
+              <Button Classes="tool" Click="OnColorPresetClick" Tag="#EBF5FB" Margin="2" ToolTip.Tip="Небесно-голубой">
+                <Border Width="24" Height="24" CornerRadius="12" Background="#EBF5FB" BorderBrush="#AED6F1" BorderThickness="1"/>
+              </Button>
+              <Button Classes="tool" Click="OnColorPresetClick" Tag="#FDF2E9" Margin="2" ToolTip.Tip="Тёплый закат">
+                <Border Width="24" Height="24" CornerRadius="12" Background="#FDF2E9" BorderBrush="#FAD7A0" BorderThickness="1"/>
+              </Button>
+              <Button Classes="tool" Click="OnColorPresetClick" Tag="#2C3E50" Margin="2" ToolTip.Tip="Глубокая ночь">
+                <Border Width="24" Height="24" CornerRadius="12" Background="#2C3E50" BorderBrush="#1A252F" BorderThickness="1"/>
+              </Button>
+              <Button Classes="tool" Click="OnColorPresetClick" Tag="#1A1A2E" Margin="2" ToolTip.Tip="Космический тёмный">
+                <Border Width="24" Height="24" CornerRadius="12" Background="#1A1A2E" BorderBrush="#16213E" BorderThickness="1"/>
+              </Button>
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Scene Objects Overview -->
+        <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10" Padding="12">
+          <StackPanel Spacing="6">
+            <TextBlock Text="📊 Объекты сцены" Classes="h"/>
+            <DockPanel>
+              <TextBlock Text="Всего объектов:" FontSize="12" Opacity="0.7"/>
+              <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.Objects.Count, StringFormat='{}{0} шт.'}" FontWeight="Bold" FontSize="12"/>
+            </DockPanel>
+            <TextBlock Text="Для создания нового объекта или элемента интерфейса нажмите кнопку «+ Создать» вверху."
+                       FontSize="11" Opacity="0.6" TextWrapping="Wrap" Margin="0,4,0,0"/>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Panel>
+  </ScrollViewer>
+</UserControl>

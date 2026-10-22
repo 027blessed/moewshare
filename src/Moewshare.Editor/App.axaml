@@ -1,0 +1,74 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Moewshare.Editor.App" RequestedThemeVariant="Light">
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="Window">
+      <Setter Property="Foreground" Value="#482C30"/>
+      <Setter Property="FontFamily" Value="Inter,Segoe UI,-apple-system,BlinkMacSystemFont,sans-serif"/>
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="#E05263"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="14,7"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FF697E"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.soft">
+      <Setter Property="Background" Value="#FCE8EC"/>
+      <Setter Property="Foreground" Value="#482C30"/>
+      <Setter Property="BorderBrush" Value="#F1D9DB"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+    </Style>
+    <Style Selector="Button.soft:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#F7CDD5"/>
+      <Setter Property="Foreground" Value="#482C30"/>
+    </Style>
+    <Style Selector="Button.active">
+      <Setter Property="Background" Value="#F7CDD5"/>
+      <Setter Property="Foreground" Value="#8B1E2D"/>
+      <Setter Property="BorderBrush" Value="#E05263"/>
+      <Setter Property="BorderThickness" Value="1.5"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="10,6"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+    </Style>
+    <Style Selector="Button.tool">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#482C30"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Padding" Value="6,4"/>
+      <Setter Property="FontSize" Value="12"/>
+    </Style>
+    <Style Selector="Button.tool:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#FCE8EC"/>
+    </Style>
+    <Style Selector="TextBlock.h">
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Foreground" Value="#6B3D44"/>
+      <Setter Property="Margin" Value="0,8,0,3"/>
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="BorderBrush" Value="#F1D9DB"/>
+      <Setter Property="Padding" Value="8,5"/>
+      <Setter Property="MinHeight" Value="32"/>
+    </Style>
+    <Style Selector="TextBox:focus">
+      <Setter Property="BorderBrush" Value="#E05263"/>
+    </Style>
+    <Style Selector="ComboBox">
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="BorderBrush" Value="#F1D9DB"/>
+      <Setter Property="MinHeight" Value="32"/>
+    </Style>
+  </Application.Styles>
+</Application>

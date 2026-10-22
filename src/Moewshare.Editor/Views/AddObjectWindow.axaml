@@ -1,0 +1,99 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Moewshare.Editor.Views.AddObjectWindow"
+        Title="✨ Создать объект на сцене"
+        Icon="/Assets/icon.ico"
+        Width="780" Height="550" MinWidth="680" MinHeight="460"
+        WindowStartupLocation="CenterOwner"
+        Background="#FFF4F3">
+
+  <DockPanel Margin="18">
+    <!-- Header -->
+    <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,14">
+      <DockPanel>
+        <Border DockPanel.Dock="Right" Background="#FCE8EC" CornerRadius="8" Padding="8,4" VerticalAlignment="Center">
+          <TextBlock x:Name="ItemsCountText" Text="14 доступных объектов" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+        </Border>
+        <StackPanel Spacing="2">
+          <TextBlock Text="✨ Добавить объект на сцену" FontSize="18" FontWeight="ExtraBold" Foreground="#4A2929"/>
+          <TextBlock Text="Выберите нужный примитив, 2D-спрайт, элемент интерфейса или шаблон персонажа."
+                     FontSize="12" Opacity="0.7"/>
+        </StackPanel>
+      </DockPanel>
+
+      <!-- Search & Category Filters -->
+      <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+        <TextBox x:Name="SearchBox" Watermark="🔍 Поиск объекта по названию, типу или описанию..."
+                 VerticalAlignment="Center"/>
+      </Grid>
+
+      <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <Button x:Name="BtnCatAll" Classes="soft" Content="🌟 Все" Click="OnCategoryClick" Tag="Все"/>
+          <Button x:Name="BtnCat3D" Classes="soft" Content="📦 3D Объекты" Click="OnCategoryClick" Tag="3D Объекты"/>
+          <Button x:Name="BtnCat2D" Classes="soft" Content="🖼️ 2D &amp; Спрайты" Click="OnCategoryClick" Tag="2D &amp; Спрайты"/>
+          <Button x:Name="BtnCatUi" Classes="soft" Content="📱 UI Интерфейс" Click="OnCategoryClick" Tag="UI Интерфейс"/>
+          <Button x:Name="BtnCatGame" Classes="soft" Content="🎮 Геймплей &amp; Свет" Click="OnCategoryClick" Tag="Геймплей &amp; Свет"/>
+        </StackPanel>
+      </ScrollViewer>
+    </StackPanel>
+
+    <!-- Bottom Action Bar -->
+    <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#F1D9DB" BorderThickness="1"
+            CornerRadius="12" Padding="14,10" Margin="0,12,0,0">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <Button Classes="soft" Content="Отмена" Click="OnCancelClick"/>
+          <Button x:Name="BtnCreate" Classes="primary" Content="+ Создать объект" Click="OnCreateClick"/>
+        </StackPanel>
+
+        <StackPanel VerticalAlignment="Center">
+          <CheckBox x:Name="MakeChildCheckBox" Content="🔗 Сделать дочерним объектом для выбранного"
+                    FontSize="12" Foreground="#4A2929"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Cards Grid -->
+    <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="12" Padding="8">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="TemplatesItemsControl">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Width="228" Height="114" Margin="5" Padding="10" CornerRadius="10"
+                      Background="{Binding CardBackground}"
+                      BorderBrush="{Binding CardBorderBrush}"
+                      BorderThickness="{Binding CardBorderThickness}"
+                      PointerPressed="OnCardPointerPressed"
+                      DoubleTapped="OnCardDoubleTapped"
+                      Cursor="Hand">
+                <DockPanel>
+                  <!-- Top: Icon & Category Tag -->
+                  <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                    <Border DockPanel.Dock="Right" Background="{Binding TagColor}" CornerRadius="6" Padding="6,2">
+                      <TextBlock Text="{Binding Category}" FontSize="9.5" FontWeight="Bold" Foreground="{Binding TagForeground}"/>
+                    </Border>
+                    <TextBlock Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center"/>
+                  </DockPanel>
+
+                  <!-- Bottom: Description -->
+                  <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.65" TextWrapping="Wrap"
+                             MaxLines="2" TextTrimming="CharacterEllipsis" DockPanel.Dock="Bottom"/>
+
+                  <!-- Middle: Title -->
+                  <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="#4A2929"
+                             VerticalAlignment="Center"/>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+  </DockPanel>
+</Window>

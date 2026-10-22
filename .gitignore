@@ -1,0 +1,32 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+dist/
+**/.avalonia-build-tasks/
+
+# Local caches & tools
+.nuget/
+.local/
+Library/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.DotSettings.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Package files
+*.nupkg
+*.snupkg
+
+# Logs
+*.log

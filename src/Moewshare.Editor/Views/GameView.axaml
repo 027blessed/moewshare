@@ -1,0 +1,51 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Editor.ViewModels"
+             x:Class="Moewshare.Editor.Views.GameView"
+             x:DataType="vm:GamePanelVM">
+  <ScrollViewer Padding="12">
+    <StackPanel Spacing="12">
+      <!-- Status Box -->
+      <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="12" Padding="14">
+        <DockPanel>
+          <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Classes="primary" Content="▶ Запустить (F5)" Command="{Binding Editor.RunCommand}" IsEnabled="{Binding !Editor.IsRunning}"/>
+            <Button Classes="soft" Content="■ Остановить" Command="{Binding Editor.StopCommand}" IsEnabled="{Binding Editor.IsRunning}"/>
+          </StackPanel>
+
+          <StackPanel Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Width="12" Height="12" CornerRadius="6" VerticalAlignment="Center"
+                      Background="{Binding Editor.IsRunning, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue=#27AE60}">
+                <Panel>
+                  <Border Width="12" Height="12" CornerRadius="6" Background="#27AE60" IsVisible="{Binding Editor.IsRunning}"/>
+                  <Border Width="12" Height="12" CornerRadius="6" Background="#95A5A6" IsVisible="{Binding !Editor.IsRunning}"/>
+                </Panel>
+              </Border>
+              <TextBlock Text="{Binding Editor.IsRunning, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue='Сервер остановлен'}"
+                         FontWeight="Bold" FontSize="14" VerticalAlignment="Center">
+                <Panel>
+                  <TextBlock Text="Сервер активен (игра запущена)" Foreground="#27AE60" FontWeight="Bold" IsVisible="{Binding Editor.IsRunning}"/>
+                  <TextBlock Text="Сервер игры остановлен" Foreground="#7F8C8D" FontWeight="Bold" IsVisible="{Binding !Editor.IsRunning}"/>
+                </Panel>
+              </TextBlock>
+            </StackPanel>
+            <TextBlock Text="Движок поднимает изолированный локальный HTTP-сервер на 127.0.0.1 для тестирования в браузере." FontSize="12" Opacity="0.7"/>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Web Export Box -->
+      <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="12" Padding="14">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Экспорт игры в Web (Babylon.js)" Classes="h"/>
+          <TextBlock Text="Создает готовую сборку игры в папке Build/web/, которую можно загрузить на любой хостинг (GitHub Pages, itch.io, Vercel и др.)." FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+            <Button Classes="primary" Content="📦 Собрать игру (Web)" Command="{Binding Editor.BuildCommand}"/>
+            <Button Classes="soft" Content="📂 Папка проекта" Command="{Binding Editor.OpenProjectFolderCommand}"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

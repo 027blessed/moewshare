@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Moewshare.Engine/Moewshare.Engine.csproj" />
+    <Project Path="src/Moewshare.Launcher/Moewshare.Launcher.csproj" />
+    <Project Path="src/Moewshare.Editor/Moewshare.Editor.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Moewshare.Engine.Tests/Moewshare.Engine.Tests.csproj" />
+    <Project Path="tests/Moewshare.Launcher.Tests/Moewshare.Launcher.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,320 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Moewshare.Editor.ViewModels"
+        xmlns:v="using:Moewshare.Editor.Views"
+        x:Class="Moewshare.Editor.Views.MainWindow"
+        x:DataType="vm:EditorViewModel"
+        Title="{Binding Title}" Width="1240" Height="720" MinWidth="850" MinHeight="480"
+        Icon="/Assets/icon.ico"
+        Background="#FFF4F3" WindowStartupLocation="CenterScreen">
+
+  <Window.DataTemplates>
+    <DataTemplate DataType="vm:HierarchyPanelVM">
+      <v:HierarchyView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:ViewportPanelVM">
+      <v:ViewportView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:EventGraphPanelVM">
+      <v:EventGraphView DataContext="{Binding GraphVM}"/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:InspectorPanelVM">
+      <v:InspectorView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:AssetsPanelVM">
+      <v:AssetsView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:ConsolePanelVM">
+      <v:ConsoleView/>
+    </DataTemplate>
+    <DataTemplate DataType="vm:GamePanelVM">
+      <v:GameView/>
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <DockPanel>
+    <!-- Top Menu -->
+    <Menu DockPanel.Dock="Top" Background="White">
+      <MenuItem Header="Файл">
+        <MenuItem Header="Сохранить" Command="{Binding SaveCommand}" InputGesture="Ctrl+S"/>
+        <MenuItem Header="⚙️ Настройки движка…" Command="{Binding OpenSettingsCommand}" InputGesture="Ctrl+,"/>
+        <Separator/>
+        <MenuItem Header="Открыть сцену…" Command="{Binding OpenSceneCommand}"/>
+        <MenuItem Header="Сделать сцену стартовой" Command="{Binding SetStartSceneCommand}"/>
+        <MenuItem Header="Открыть папку проекта" Command="{Binding OpenProjectFolderCommand}"/>
+        <MenuItem Header="Открыть папку Assets" Command="{Binding OpenAssetsFolderCommand}"/>
+        <Separator/>
+        <MenuItem Header="К лаунчеру" Command="{Binding BackToLauncherCommand}"/>
+        <MenuItem Header="🗑️ Удалить текущий проект с диска…" Command="{Binding DeleteCurrentProjectCommand}"/>
+      </MenuItem>
+      <MenuItem Header="Объект">
+        <MenuItem Header="✨ Добавить объект на сцену…" Command="{Binding OpenAddObjectDialogCommand}" InputGesture="Ctrl+Shift+A"/>
+        <Separator/>
+        <MenuItem Header="3D объекты">
+          <MenuItem Header="📦 Куб (Box)" Command="{Binding AddBoxCommand}"/>
+          <MenuItem Header="🔮 Сфера (Sphere)" Command="{Binding AddSphereCommand}"/>
+          <MenuItem Header="🥫 Цилиндр (Cylinder)" Command="{Binding AddCylinderCommand}"/>
+          <MenuItem Header="🟩 Плоскость (Plane)" Command="{Binding AddPlaneCommand}"/>
+          <MenuItem Header="💡 Свет (Light)" Command="{Binding AddLightCommand}"/>
+        </MenuItem>
+        <MenuItem Header="Интерфейс (UI Canvas)">
+          <MenuItem Header="🖼️ Холст экрана (Canvas)" Command="{Binding AddCanvasCommand}"/>
+          <MenuItem Header="📝 UI Текст" Command="{Binding AddUiTextCommand}"/>
+          <MenuItem Header="🖼️ UI Картинка" Command="{Binding AddUiImageCommand}"/>
+          <MenuItem Header="🔘 UI Кнопка" Command="{Binding AddUiButtonCommand}"/>
+        </MenuItem>
+        <Separator/>
+        <MenuItem Header="Дублировать (Ctrl+D)" Command="{Binding DuplicateSelectedCommand}" IsEnabled="{Binding HasSelection}"/>
+        <MenuItem Header="Удалить выбранный" Command="{Binding DeleteSelectedCommand}" IsEnabled="{Binding HasSelection}"/>
+      </MenuItem>
+      <MenuItem Header="Трансформация">
+        <MenuItem Header="Выбор (Q)" Command="{Binding SetGizmoModeCommand}" CommandParameter="select"/>
+        <MenuItem Header="Перемещение (W)" Command="{Binding SetGizmoModeCommand}" CommandParameter="translate"/>
+        <MenuItem Header="Вращение (E)" Command="{Binding SetGizmoModeCommand}" CommandParameter="rotate"/>
+        <MenuItem Header="Масштабирование (R)" Command="{Binding SetGizmoModeCommand}" CommandParameter="scale"/>
+        <Separator/>
+        <MenuItem Header="Фокус на объекте (F)" Command="{Binding FocusOnSelectedCommand}" IsEnabled="{Binding HasSelection}"/>
+      </MenuItem>
+      <MenuItem Header="Вид">
+        <MenuItem Header="Сбросить расположение панелей" Command="{Binding ResetLayoutCommand}"/>
+      </MenuItem>
+      <MenuItem Header="Игра">
+        <MenuItem Header="Запустить (F5)" Command="{Binding RunCommand}" IsEnabled="{Binding !IsRunning}"/>
+        <MenuItem Header="Остановить" Command="{Binding StopCommand}" IsEnabled="{Binding IsRunning}"/>
+        <MenuItem Header="Собрать игру (Web)" Command="{Binding BuildCommand}"/>
+      </MenuItem>
+    </Menu>
+
+    <!-- Top Toolbar -->
+    <Border DockPanel.Dock="Top" Background="White" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="12,6">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+          <Button Classes="soft" Content="⊞ Сброс панелей" Command="{Binding ResetLayoutCommand}" ToolTip.Tip="Вернуть стандартный порядок вкладок"/>
+          <Button Classes="soft" Content="← К лаунчеру" Command="{Binding BackToLauncherCommand}"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Classes="soft" Content="💾 Сохранить" Command="{Binding SaveCommand}"/>
+          <Button Classes="soft" Content="⚙️ Настройки" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Настройки движка и AI &amp; MCP"/>
+          <Button Classes="primary" Content="+ Создать ▼">
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                <MenuItem Header="3D объекты">
+                  <MenuItem Header="📦 Куб (Box)" Command="{Binding AddBoxCommand}"/>
+                  <MenuItem Header="🔮 Сфера (Sphere)" Command="{Binding AddSphereCommand}"/>
+                  <MenuItem Header="🥫 Цилиндр (Cylinder)" Command="{Binding AddCylinderCommand}"/>
+                  <MenuItem Header="🟩 Плоскость (Plane)" Command="{Binding AddPlaneCommand}"/>
+                  <MenuItem Header="💡 Источник света (Light)" Command="{Binding AddLightCommand}"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Интерфейс (UI Canvas)">
+                  <MenuItem Header="🖼️ Холст экрана (Canvas)" Command="{Binding AddCanvasCommand}"/>
+                  <MenuItem Header="📝 UI Текст" Command="{Binding AddUiTextCommand}"/>
+                  <MenuItem Header="🖼️ UI Изображение" Command="{Binding AddUiImageCommand}"/>
+                  <MenuItem Header="🔘 UI Кнопка" Command="{Binding AddUiButtonCommand}"/>
+                </MenuItem>
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <Button Classes="primary" Content="▶ Запустить (F5)" Command="{Binding RunCommand}" IsEnabled="{Binding !IsRunning}"/>
+          <Button Classes="soft" Content="■ Остановить" Command="{Binding StopCommand}" IsEnabled="{Binding IsRunning}"/>
+          <Button Classes="soft" Content="📦 Собрать Web" Command="{Binding BuildCommand}"/>
+
+          <Separator Background="#F1D9DB" Margin="6,2"/>
+
+          <!-- Mode buttons -->
+          <Button Classes="soft" Content="✋ Q" Command="{Binding SetGizmoModeCommand}" CommandParameter="select" ToolTip.Tip="Выбор"/>
+          <Button Classes="soft" Content="↔ W" Command="{Binding SetGizmoModeCommand}" CommandParameter="translate" ToolTip.Tip="Перемещение (W)"/>
+          <Button Classes="soft" Content="🔄 E" Command="{Binding SetGizmoModeCommand}" CommandParameter="rotate" ToolTip.Tip="Вращение (E)"/>
+          <Button Classes="soft" Content="⤢ R" Command="{Binding SetGizmoModeCommand}" CommandParameter="scale" ToolTip.Tip="Масштабирование (R)"/>
+          <Button Classes="soft" Content="🎯 F" Command="{Binding FocusOnSelectedCommand}" ToolTip.Tip="Фокус на объекте (F)" IsEnabled="{Binding HasSelection}"/>
+
+          <Separator Background="#F1D9DB" Margin="6,2"/>
+          <Button Classes="soft" Content="⚡ События (Event Graph)" Command="{Binding OpenEventGraphCommand}" ToolTip.Tip="Открыть визуальный редактор событий и логики"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Main Workspace Grid (Left & Right columns are full-height!) -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <!-- Left Zone (Hierarchy) -->
+        <ColumnDefinition Width="260" MinWidth="180" MaxWidth="450"/>
+        <!-- Splitter Left -->
+        <ColumnDefinition Width="4"/>
+        <!-- Center Zone (Viewport + Bottom Panels) -->
+        <ColumnDefinition Width="*"/>
+        <!-- Splitter Right -->
+        <ColumnDefinition Width="4"/>
+        <!-- Right Zone (Inspector) -->
+        <ColumnDefinition Width="340" MinWidth="260" MaxWidth="550"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- LEFT ZONE (Full Height!) -->
+      <Border Grid.Column="0" Background="White" BorderBrush="#F1D9DB" BorderThickness="0,0,1,0" IsVisible="{Binding LeftPanels.Count}">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="6,4">
+            <DockPanel>
+              <!-- Move Buttons -->
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                <Button Classes="tool" Content="⇩" ToolTip.Tip="Переместить вниз" Command="{Binding ActiveLeftPanel.MoveToBottomCommand}"/>
+                <Button Classes="tool" Content="⇨" ToolTip.Tip="Переместить вправо" Command="{Binding ActiveLeftPanel.MoveToRightCommand}"/>
+                <Button Classes="tool" Content="⛶" ToolTip.Tip="В центр" Command="{Binding ActiveLeftPanel.MoveToCenterCommand}"/>
+              </StackPanel>
+              <!-- Tabs -->
+              <ItemsControl ItemsSource="{Binding LeftPanels}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:EditorPanelVM">
+                    <Button Classes="tool" Command="{Binding ActivateCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding Icon}"/>
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+          <ContentControl Content="{Binding ActiveLeftPanel}"/>
+        </DockPanel>
+      </Border>
+
+      <!-- Left GridSplitter -->
+      <GridSplitter Grid.Column="1" Background="#F1D9DB" ResizeDirection="Columns"/>
+
+      <!-- CENTER & BOTTOM AREA -->
+      <Grid Grid.Column="2">
+        <Grid.RowDefinitions>
+          <!-- Viewport / Center Panels -->
+          <RowDefinition Height="*" MinHeight="180"/>
+          <!-- Horizontal Splitter between Viewport and Bottom -->
+          <RowDefinition Height="Auto"/>
+          <!-- Bottom Zone (Assets / Console / Web) -->
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- VIEWPORT / CENTER PANELS -->
+        <Border Grid.Row="0" Background="Transparent" IsVisible="{Binding CenterPanels.Count}">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="6,4">
+              <DockPanel>
+                <!-- Move Buttons -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                  <Button Classes="tool" Content="⇦" ToolTip.Tip="Переместить влево" Command="{Binding ActiveCenterPanel.MoveToLeftCommand}"/>
+                  <Button Classes="tool" Content="⇩" ToolTip.Tip="Переместить вниз" Command="{Binding ActiveCenterPanel.MoveToBottomCommand}"/>
+                  <Button Classes="tool" Content="⇨" ToolTip.Tip="Переместить вправо" Command="{Binding ActiveCenterPanel.MoveToRightCommand}"/>
+                </StackPanel>
+                <!-- Tabs -->
+                <ItemsControl ItemsSource="{Binding CenterPanels}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4"/></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:EditorPanelVM">
+                      <Button Classes="tool" Command="{Binding ActivateCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <TextBlock Text="{Binding Icon}"/>
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DockPanel>
+            </Border>
+            <ContentControl Content="{Binding ActiveCenterPanel}"/>
+          </DockPanel>
+        </Border>
+
+        <!-- Horizontal Splitter -->
+        <GridSplitter Grid.Row="1" Height="4" Background="#F1D9DB" HorizontalAlignment="Stretch"
+                      IsVisible="{Binding BottomPanels.Count}"/>
+
+        <!-- BOTTOM ZONE (Resizable and Collapsible!) -->
+        <Border Grid.Row="2" Background="White" BorderBrush="#F1D9DB" BorderThickness="0,1,0,0" IsVisible="{Binding BottomPanels.Count}">
+          <DockPanel>
+            <Border DockPanel.Dock="Top" Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="6,4">
+              <DockPanel>
+                <!-- Collapse/Expand and Move Buttons -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                  <Button Classes="tool" Command="{Binding ToggleBottomPanelCommand}" ToolTip.Tip="Свернуть / Развернуть панель">
+                    <TextBlock Text="{Binding IsBottomExpanded, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue='▼ Свернуть'}">
+                      <Panel>
+                        <TextBlock Text="▼ Свернуть" IsVisible="{Binding IsBottomExpanded}"/>
+                        <TextBlock Text="▲ Развернуть" IsVisible="{Binding !IsBottomExpanded}"/>
+                      </Panel>
+                    </TextBlock>
+                  </Button>
+                  <Button Classes="tool" Content="⇦" ToolTip.Tip="Переместить влево" Command="{Binding ActiveBottomPanel.MoveToLeftCommand}"/>
+                  <Button Classes="tool" Content="⇨" ToolTip.Tip="Переместить вправо" Command="{Binding ActiveBottomPanel.MoveToRightCommand}"/>
+                  <Button Classes="tool" Content="⛶" ToolTip.Tip="В центр" Command="{Binding ActiveBottomPanel.MoveToCenterCommand}"/>
+                </StackPanel>
+                <!-- Tabs -->
+                <ItemsControl ItemsSource="{Binding BottomPanels}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4"/></ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="vm:EditorPanelVM">
+                      <Button Classes="tool" Command="{Binding ActivateCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                          <TextBlock Text="{Binding Icon}"/>
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DockPanel>
+            </Border>
+
+            <!-- Bottom Content (Hidden when collapsed!) -->
+            <Border Height="180" IsVisible="{Binding IsBottomExpanded}">
+              <ContentControl Content="{Binding ActiveBottomPanel}"/>
+            </Border>
+          </DockPanel>
+        </Border>
+      </Grid>
+
+      <!-- Right GridSplitter -->
+      <GridSplitter Grid.Column="3" Background="#F1D9DB" ResizeDirection="Columns"/>
+
+      <!-- RIGHT ZONE (Inspector - Full Height!) -->
+      <Border Grid.Column="4" Background="White" BorderBrush="#F1D9DB" BorderThickness="1,0,0,0" IsVisible="{Binding RightPanels.Count}">
+        <DockPanel>
+          <Border DockPanel.Dock="Top" Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="6,4">
+            <DockPanel>
+              <!-- Move Buttons -->
+              <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="2">
+                <Button Classes="tool" Content="⇦" ToolTip.Tip="Переместить влево" Command="{Binding ActiveRightPanel.MoveToLeftCommand}"/>
+                <Button Classes="tool" Content="⇩" ToolTip.Tip="Переместить вниз" Command="{Binding ActiveRightPanel.MoveToBottomCommand}"/>
+                <Button Classes="tool" Content="⛶" ToolTip.Tip="В центр" Command="{Binding ActiveRightPanel.MoveToCenterCommand}"/>
+              </StackPanel>
+              <!-- Tabs -->
+              <ItemsControl ItemsSource="{Binding RightPanels}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="vm:EditorPanelVM">
+                    <Button Classes="tool" Command="{Binding ActivateCommand}">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <TextBlock Text="{Binding Icon}"/>
+                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold"/>
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </DockPanel>
+          </Border>
+          <ContentControl Content="{Binding ActiveRightPanel}"/>
+        </DockPanel>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Window>

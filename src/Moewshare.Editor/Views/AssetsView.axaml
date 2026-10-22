@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Editor.ViewModels"
+             x:Class="Moewshare.Editor.Views.AssetsView"
+             x:DataType="vm:AssetsPanelVM">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
+      <Button Classes="primary" Content="➕ Импорт файла…" Command="{Binding Editor.ImportAssetCommand}"/>
+      <Button Classes="soft" Content="🔄 Обновить" Command="{Binding Editor.RefreshAssetsCommand}"/>
+      <Button Classes="soft" Content="📂 Открыть папку Assets" Command="{Binding Editor.OpenAssetsFolderCommand}"/>
+    </StackPanel>
+
+    <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10">
+      <ListBox ItemsSource="{Binding Editor.Assets}" Background="Transparent">
+        <ListBox.ItemTemplate>
+          <DataTemplate>
+            <DockPanel Margin="2">
+              <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+            </DockPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Border>
+  </DockPanel>
+</UserControl>

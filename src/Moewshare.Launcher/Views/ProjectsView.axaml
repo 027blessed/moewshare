@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Launcher.ViewModels"
+             x:Class="Moewshare.Launcher.Views.ProjectsView"
+             x:DataType="vm:ProjectsViewModel">
+  <DockPanel Margin="32,24">
+    <!-- Top Header & Actions -->
+    <StackPanel DockPanel.Dock="Top" Spacing="16" Margin="0,0,0,18">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+          <!-- Button to clear missing projects -->
+          <Button Classes="soft" Background="#FDECEF" Foreground="#C0392B"
+                  IsVisible="{Binding MissingCount}"
+                  ToolTip.Tip="Убрать из списка все проекты, чьи папки были удалены"
+                  Command="{Binding ClearAllMissingCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="🧹"/>
+              <TextBlock Text="{Binding MissingCount, StringFormat='Очистить удалённые ({0})'}"/>
+            </StackPanel>
+          </Button>
+
+          <Button Classes="soft" Command="{Binding AddExistingCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="📁"/>
+              <TextBlock Text="Добавить существующий"/>
+            </StackPanel>
+          </Button>
+
+          <Button Classes="primary" Command="{Binding NewProjectCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="✨"/>
+              <TextBlock Text="Новый проект"/>
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <TextBlock Classes="h1" Text="Мои проекты"/>
+          <Border Background="#FCE8EC" CornerRadius="999" Padding="10,4" VerticalAlignment="Center">
+            <TextBlock Text="{Binding Items.Count, StringFormat='{}{0} шт.'}" FontSize="12" FontWeight="Bold" Foreground="#4A2929"/>
+          </Border>
+        </StackPanel>
+      </DockPanel>
+
+      <!-- Filter and Search Row -->
+      <Border Classes="card" Padding="14,10">
+        <DockPanel>
+          <CheckBox DockPanel.Dock="Right" Content="Скрывать удалённые" IsChecked="{Binding HideMissing}" VerticalAlignment="Center"/>
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBox Width="300" Watermark="🔍 Поиск по названию…" Text="{Binding SearchText}"/>
+            <ComboBox Width="180" SelectedIndex="{Binding SortIndex}">
+              <ComboBoxItem Content="🕒 Сначала новые"/>
+              <ComboBoxItem Content="🔤 По названию"/>
+            </ComboBox>
+            <ComboBox Width="150" SelectedIndex="{Binding KindIndex}">
+              <ComboBoxItem Content="🐾 Все типы"/>
+              <ComboBoxItem Content="🎮 Только 2D"/>
+              <ComboBoxItem Content="🌐 Только 3D"/>
+            </ComboBox>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+    </StackPanel>
+
+    <!-- Project Cards Grid -->
+    <ScrollViewer>
+      <StackPanel Spacing="16">
+        <!-- Empty State -->
+        <Border Classes="card" Background="White" Padding="32" IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" Margin="0,40">
+          <StackPanel Spacing="12" HorizontalAlignment="Center">
+            <TextBlock Text="🐱" FontSize="48" HorizontalAlignment="Center"/>
+            <TextBlock Classes="h2" Text="Проектов пока не найдено" HorizontalAlignment="Center"/>
+            <TextBlock Classes="muted" Text="Создайте новый проект по шаблону или выберите папку существующего проекта." HorizontalAlignment="Center"/>
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,10,0,0">
+              <Button Classes="primary" Content="✨ Создать игру" Command="{Binding NewProjectCommand}"/>
+              <Button Classes="soft" Content="📁 Открыть папку" Command="{Binding AddExistingCommand}"/>
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Project Cards -->
+        <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource ProjectCardTemplate}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal"/>
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</UserControl>

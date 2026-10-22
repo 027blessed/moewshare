@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Moewshare.Launcher.Views.LibraryView">
+  <ScrollViewer>
+    <StackPanel Margin="32,24" Spacing="18">
+      <TextBlock Classes="h1" Text="Библиотека"/>
+      <Border Classes="card"><TextBlock TextWrapping="Wrap" Text="{Binding OnlineState}"/></Border>
+      <ItemsControl ItemsSource="{Binding Categories}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Background="{DynamicResource AccentBrush}" Opacity=".6" CornerRadius="999" Padding="14,6" Margin="0,0,8,8"
+                    ToolTip.Tip="Появится вместе с онлайн-каталогом">
+              <TextBlock Text="{Binding}" FontSize="12" FontWeight="SemiBold"/>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Classes="h2" FontSize="20" Text="Локальные ресурсы: шаблоны"/>
+      <ItemsControl ItemsSource="{Binding LocalTemplates}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Border Classes="card" Width="260" Margin="0,0,16,16">
+              <StackPanel Spacing="6">
+                <TextBlock Classes="h2" Text="{Binding Name}"/>
+                <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap" Text="{Binding Description}"/>
+                <TextBlock Classes="muted" FontSize="11" Text="{Binding Status}"/>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

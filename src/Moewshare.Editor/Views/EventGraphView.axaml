@@ -1,0 +1,367 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Moewshare.Editor.ViewModels"
+             xmlns:v="using:Moewshare.Editor.Views"
+             xmlns:ev="using:Moewshare.Engine.Events"
+             x:Class="Moewshare.Editor.Views.EventGraphView"
+             x:DataType="vm:EventGraphVM">
+
+  <DockPanel Background="#14161D">
+    <!-- Top Toolbar -->
+    <Border DockPanel.Dock="Top" Background="#1E222D" BorderBrush="#2D3342" BorderThickness="0,0,0,1" Padding="10,6">
+      <DockPanel>
+        <!-- Right side info & zoom -->
+        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+          <Button Classes="tool" Content="🎯 Центрировать (F)" Click="OnCenterClick" ToolTip.Tip="Выровнять вид по узлам графа" Foreground="#E5E7EB"/>
+          <Button Classes="tool" Content="🧹 Очистить" Command="{Binding ClearGraphCommand}" ToolTip.Tip="Очистить все блоки графа" Foreground="#E5E7EB"/>
+          <Border Background="#282E3E" CornerRadius="6" Padding="8,4">
+            <TextBlock Text="{Binding ZoomLevel, StringFormat='Zoom: {0:P0}'}" Foreground="#9CA3AF" FontSize="11" FontWeight="SemiBold"/>
+          </Border>
+        </StackPanel>
+
+        <!-- Left side action buttons -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <!-- Target Switcher: Global Scene vs Object Graph -->
+          <Border Background="#252A38" CornerRadius="8" Padding="3,2">
+            <StackPanel Orientation="Horizontal" Spacing="3">
+              <Button Classes="tool" Content="🌐 Глобальный" Command="{Binding SelectGlobalGraphCommand}"
+                      Foreground="{Binding !IsObjectGraph, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue='#60A5FA'}"
+                      ToolTip.Tip="Глобальные события сцены"/>
+              <Button Classes="tool" Content="📦 Объект" Command="{Binding SelectObjectGraphCommand}"
+                      Foreground="{Binding IsObjectGraph, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=True, FallbackValue='#F59E0B'}"
+                      ToolTip.Tip="Индивидуальный граф логики выбранного объекта"/>
+              <Border Background="#1E222D" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                <TextBlock Text="{Binding CurrentTargetTitle}" FontWeight="SemiBold" FontSize="11" Foreground="#F59E0B"/>
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <!-- Add Node button with Flyout search palette -->
+          <Button x:Name="AddNodeFlyoutButton" Classes="primary" Content="+ Добавить блок ▼" ToolTip.Tip="Открыть каталог визуальных блоков">
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedLeft">
+                <Border Background="#1E222D" BorderBrush="#374151" BorderThickness="1" CornerRadius="10" Padding="12" Width="360" MaxHeight="450">
+                  <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Каталог блоков логики" FontWeight="Bold" FontSize="13" Foreground="White" Margin="0,0,0,8"/>
+                    <TextBox DockPanel.Dock="Top" Watermark="🔍 Поиск блоков (Клик, Branch, UI, Math...)" Text="{Binding NodeSearchText}" Margin="0,0,0,8"/>
+                    <ScrollViewer>
+                      <ItemsControl ItemsSource="{Binding FilteredLibraryNodes}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="ev:NodeDescriptor">
+                            <Button Classes="tool" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                    Click="OnAddNodeClick" Margin="0,2" Padding="8,6">
+                              <DockPanel>
+                                <Border DockPanel.Dock="Right" Background="#374151" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                  <TextBlock Text="{Binding Category}" FontSize="10" Foreground="#D1D5DB"/>
+                                </Border>
+                                <StackPanel Spacing="2">
+                                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" Foreground="White"/>
+                                  <TextBlock Text="{Binding Description}" FontSize="10.5" Foreground="#9CA3AF" TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                              </DockPanel>
+                            </Button>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </ScrollViewer>
+                  </DockPanel>
+                </Border>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
+
+          <!-- Simulate button -->
+          <Button Classes="soft" Content="▶ Симуляция" Command="{Binding SimulateCommand}"
+                  ToolTip.Tip="Проверить выполнение логики графа прямо в редакторе"
+                  Background="#065F46" Foreground="White" BorderBrush="#059669"/>
+
+          <!-- Presets drop-down -->
+          <Button Classes="soft" Content="📦 Шаблоны механик ▼" Foreground="#E5E7EB" Background="#282E3E" BorderBrush="#374151">
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                <MenuItem Header="🐱 Кликер (Тапалка + Автоклик)" Command="{Binding LoadPresetClickerCommand}"/>
+                <MenuItem Header="🪙 Сбор монет (10 монет + UI)" Command="{Binding LoadPresetCoinCollectorCommand}"/>
+                <MenuItem Header="🚪 Дверь и ключ" Command="{Binding LoadPresetDoorKeyCommand}"/>
+                <MenuItem Header="❤️ Здоровье игрока (HP + Опасность)" Command="{Binding LoadPresetHealthCommand}"/>
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+
+          <!-- Delete selected node button -->
+          <Button Classes="tool" Content="🗑️ Удалить блок" Command="{Binding DeleteSelectedNodeCommand}"
+                  IsEnabled="{Binding SelectedNode, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  Foreground="#F87171" ToolTip.Tip="Удалить выбранный блок (клавиша Delete)"/>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Main Workspace Area -->
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <!-- Left Sidebar: Catalog, Variables, Debug (Width 300) -->
+        <ColumnDefinition Width="300" MinWidth="240" MaxWidth="480"/>
+        <!-- Splitter -->
+        <ColumnDefinition Width="4"/>
+        <!-- Center Canvas -->
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+
+      <!-- LEFT SIDEBAR WITH 4 TABS -->
+      <Border Grid.Column="0" Background="#1E222D" BorderBrush="#2D3342" BorderThickness="0,0,1,0">
+        <TabControl SelectedIndex="{Binding LeftSidebarTabIndex, Mode=TwoWay}">
+          <!-- TAB 0: SELECTED NODE PROPERTIES -->
+          <TabItem Header="Свойства" FontSize="12" FontWeight="SemiBold">
+            <ScrollViewer Margin="10,8">
+              <StackPanel Spacing="10">
+                <!-- If no node selected -->
+                <Border IsVisible="{Binding !HasSelectedNode}" Background="#262B3A" CornerRadius="8" Padding="14">
+                  <StackPanel Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="👆 Кликните по блоку" FontWeight="Bold" FontSize="13" Foreground="White" HorizontalAlignment="Center"/>
+                    <TextBlock Text="Выберите любой блок на полотне, чтобы настроить его параметры (целевой текст, префикс, кнопку и др.)."
+                               FontSize="11" Foreground="#9CA3AF" TextWrapping="Wrap" TextAlignment="Center"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- When node is selected -->
+                <StackPanel IsVisible="{Binding HasSelectedNode}" Spacing="10">
+                  <!-- Header Card -->
+                  <Border Background="#262B3A" CornerRadius="8" Padding="10">
+                    <DockPanel>
+                      <Border DockPanel.Dock="Right" Background="#374151" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding SelectedNode.Category}" FontSize="10" Foreground="#93C5FD"/>
+                      </Border>
+                      <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding SelectedNode.Title}" FontWeight="Bold" FontSize="13" Foreground="White"/>
+                        <TextBlock Text="{Binding SelectedNode.NodeType, StringFormat='Тип: {0}'}" FontSize="10" Foreground="#9CA3AF"/>
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+
+                  <!-- 1. Special Properties for Set UI Text -->
+                  <Border IsVisible="{Binding IsUiSetTextSelected}" Background="#262B3A" CornerRadius="8" Padding="10">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="🎯 Целевой UI-текст" FontWeight="Bold" FontSize="11.5" Foreground="#60A5FA"/>
+                      <ComboBox ItemsSource="{Binding AvailableUiTexts}" SelectedItem="{Binding SelectedNodeTargetName}"
+                                HorizontalAlignment="Stretch" FontSize="12" ToolTip.Tip="Выберите имя текстового элемента на экране"/>
+
+                      <TextBlock Text="🏷️ Постоянный префикс (перед числом)" FontWeight="Bold" FontSize="11.5" Foreground="#60A5FA" Margin="0,4,0,0"/>
+                      <TextBox Text="{Binding SelectedNodePrefix}" Watermark="например: Монет: " FontSize="12"
+                               ToolTip.Tip="Текст, который будет написан перед числом (например: «Монет: »)"/>
+
+                      <TextBlock Text="🏷️ Постоянный суффикс (после числа)" FontWeight="Bold" FontSize="11.5" Foreground="#60A5FA" Margin="0,4,0,0"/>
+                      <TextBox Text="{Binding SelectedNodeSuffix}" Watermark="например: шт." FontSize="12"
+                               ToolTip.Tip="Текст, который будет написан после числа (например: « шт.»)"/>
+
+                      <!-- Live preview banner -->
+                      <Border Background="#1E222D" CornerRadius="6" Padding="8,6" Margin="0,4,0,0">
+                        <TextBlock Text="{Binding SelectedNodePreviewText}" FontSize="11" Foreground="#34D399" FontWeight="SemiBold"/>
+                      </Border>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- 2. Properties for Click Events (Button or Object) -->
+                  <StackPanel IsVisible="{Binding IsClickEventSelected}" Spacing="8">
+                    <!-- A. When inside Local Object Graph (Auto-bound, no selection needed!) -->
+                    <Border IsVisible="{Binding IsObjectGraph}" Background="#132E22" BorderBrush="#059669" BorderThickness="1" CornerRadius="8" Padding="10">
+                      <StackPanel Spacing="6">
+                        <DockPanel>
+                          <Border DockPanel.Dock="Right" Background="#065F46" CornerRadius="4" Padding="6,2">
+                            <TextBlock Text="Автоматически" FontSize="9.5" Foreground="#6EE7B7" FontWeight="Bold"/>
+                          </Border>
+                          <TextBlock Text="🎯 Локальный клик" FontWeight="Bold" FontSize="12" Foreground="#34D399"/>
+                        </DockPanel>
+                        <TextBlock Text="{Binding TargetObject.Name, StringFormat='Событие привязано прямо к объекту «{0}».'}"
+                                   FontSize="11.5" Foreground="White" FontWeight="SemiBold"/>
+                        <TextBlock Text="При клике по этому объекту в игре цепочка сработает сразу. Выбирать имя вручную не требуется!"
+                                   FontSize="10.5" Foreground="#9CA3AF" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </Border>
+
+                    <!-- B. When inside Global Scene Graph (Can choose which button to listen to) -->
+                    <Border IsVisible="{Binding !IsObjectGraph}" Background="#262B3A" CornerRadius="8" Padding="10">
+                      <StackPanel Spacing="8">
+                        <TextBlock Text="🔘 Целевая кнопка сцены (ButtonName)" FontWeight="Bold" FontSize="11.5" Foreground="#FCD34D"/>
+                        <ComboBox ItemsSource="{Binding AvailableUiButtons}" SelectedItem="{Binding SelectedNodeButtonName}"
+                                  HorizontalAlignment="Stretch" FontSize="12" ToolTip.Tip="Кнопка, клик по которой активирует эту цепочку"/>
+                        <TextBlock Text="Выберите из списка, при клике на какую именно кнопку сцены сработает эта цепочка." FontSize="10" Foreground="#9CA3AF" TextWrapping="Wrap"/>
+                      </StackPanel>
+                    </Border>
+                  </StackPanel>
+
+                  <!-- 4. Special Properties for Variable Nodes -->
+                  <Border IsVisible="{Binding IsVariableNodeSelected}" Background="#262B3A" CornerRadius="8" Padding="10">
+                    <StackPanel Spacing="8">
+                      <TextBlock Text="🔢 Выбор переменной" FontWeight="Bold" FontSize="11.5" Foreground="#F59E0B"/>
+                      <ComboBox ItemsSource="{Binding AvailableVariableNames}" SelectedItem="{Binding SelectedNodeVariableName}"
+                                HorizontalAlignment="Stretch" FontSize="12"/>
+                    </StackPanel>
+                  </Border>
+
+                  <!-- Delete selected node button -->
+                  <Button Classes="tool" Content="🗑️ Удалить этот блок" Command="{Binding DeleteSelectedNodeCommand}"
+                          Foreground="#F87171" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,6,0,0"/>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- TAB 1: NODE CATALOG DIRECTLY IN SIDEBAR -->
+          <TabItem Header="Блоки" FontSize="12" FontWeight="SemiBold">
+            <DockPanel Margin="10,8">
+              <TextBox DockPanel.Dock="Top" Watermark="🔍 Поиск блоков..." Text="{Binding NodeSearchText}" Margin="0,0,0,8" FontSize="12"/>
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding FilteredLibraryNodes}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="ev:NodeDescriptor">
+                      <Button Classes="tool" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Click="OnAddNodeClick" Margin="0,2" Padding="8,6" Background="#262B3A" CornerRadius="6">
+                        <DockPanel>
+                          <Border DockPanel.Dock="Right" Background="#374151" CornerRadius="4" Padding="5,2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Category}" FontSize="9.5" Foreground="#93C5FD"/>
+                          </Border>
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="11.5" Foreground="White"/>
+                            <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#9CA3AF" TextTrimming="CharacterEllipsis"/>
+                          </StackPanel>
+                        </DockPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </DockPanel>
+          </TabItem>
+
+          <!-- TAB 2: VARIABLES -->
+          <TabItem Header="Переменные" FontSize="12" FontWeight="SemiBold">
+            <DockPanel Margin="10,8">
+              <!-- New variable form at bottom -->
+              <Border DockPanel.Dock="Bottom" Background="#262B3A" CornerRadius="8" Padding="10" Margin="0,10,0,0">
+                <StackPanel Spacing="6">
+                  <TextBlock Text="+ Новая переменная" FontWeight="Bold" FontSize="11" Foreground="#9CA3AF"/>
+                  <TextBox Text="{Binding NewVarName}" Watermark="Имя переменной" FontSize="12"/>
+                  <DockPanel>
+                    <TextBlock Text="Тип:" VerticalAlignment="Center" FontSize="11" Foreground="#9CA3AF" Margin="0,0,8,0"/>
+                    <ComboBox SelectedItem="{Binding NewVarType}" HorizontalAlignment="Stretch">
+                      <ev:PortType>Integer</ev:PortType>
+                      <ev:PortType>Boolean</ev:PortType>
+                      <ev:PortType>Float</ev:PortType>
+                      <ev:PortType>String</ev:PortType>
+                    </ComboBox>
+                  </DockPanel>
+                  <TextBox Text="{Binding NewVarDefault}" Watermark="Значение по умолчанию" FontSize="12"/>
+                  <Button Classes="primary" Content="+ Добавить" Command="{Binding AddVariableCommand}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                </StackPanel>
+              </Border>
+
+              <!-- Variables List -->
+              <ScrollViewer>
+                <StackPanel>
+                  <!-- Local Variables of this Graph -->
+                  <ItemsControl ItemsSource="{Binding Variables}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate DataType="ev:GraphVariable">
+                        <Border Background="#282E3E" CornerRadius="8" Padding="10" Margin="0,0,0,8" BorderBrush="#374151" BorderThickness="1">
+                          <StackPanel Spacing="6">
+                            <!-- Row 1: Name and Delete button -->
+                            <DockPanel>
+                              <Button DockPanel.Dock="Right" Classes="tool" Content="✕" Padding="6,2"
+                                      Click="OnRemoveVariableClick" Foreground="#F87171" ToolTip.Tip="Удалить переменную"/>
+                              <TextBox Text="{Binding Name, Mode=TwoWay}" FontWeight="Bold" FontSize="12"
+                                       ToolTip.Tip="Имя переменной" Margin="0,0,6,0" Padding="6,4"
+                                       Background="#1F2430" Foreground="White" BorderBrush="#374151"/>
+                            </DockPanel>
+
+                            <!-- Row 2: Type and Default Value -->
+                            <Grid ColumnDefinitions="110,*">
+                              <ComboBox Grid.Column="0" SelectedItem="{Binding Type, Mode=TwoWay}" HorizontalAlignment="Stretch" Margin="0,0,6,0" FontSize="11">
+                                <ev:PortType>Integer</ev:PortType>
+                                <ev:PortType>Boolean</ev:PortType>
+                                <ev:PortType>Float</ev:PortType>
+                                <ev:PortType>String</ev:PortType>
+                              </ComboBox>
+                              <TextBox Grid.Column="1" Text="{Binding DefaultValue, Mode=TwoWay}" Watermark="Значение" FontSize="11" Padding="6,4"
+                                       Background="#1F2430" Foreground="#60A5FA" BorderBrush="#374151" ToolTip.Tip="Значение переменной по умолчанию"/>
+                            </Grid>
+
+                            <!-- Row 3: Action buttons Get / Set -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                              <Button Classes="tool" Content="+ Get (Чтение)"
+                                      Click="OnSpawnGetVariableClick" FontSize="10.5" Foreground="#38BDF8"/>
+                              <Button Classes="tool" Content="+ Set (Запись)"
+                                      Click="OnSpawnSetVariableClick" FontSize="10.5" Foreground="#F59E0B"/>
+                            </StackPanel>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                  <!-- Shared Scene Variables Section (from global scene or other buttons) -->
+                  <Border IsVisible="{Binding HasSharedSceneVariables}" Background="#181C26" BorderBrush="#2D3342" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,4,0,0">
+                    <StackPanel Spacing="6">
+                      <DockPanel>
+                        <Border DockPanel.Dock="Right" Background="#374151" CornerRadius="4" Padding="6,2">
+                          <TextBlock Text="Общие" FontSize="9.5" Foreground="#93C5FD" FontWeight="Bold"/>
+                        </Border>
+                        <TextBlock Text="🌐 Переменные сцены" FontWeight="Bold" FontSize="11.5" Foreground="#60A5FA"/>
+                      </DockPanel>
+                      <TextBlock Text="Переменные, объявленные на сцене или в других кнопках (например, Score). Вы можете читать и менять их прямо из этого графа!"
+                                 FontSize="10" Foreground="#9CA3AF" TextWrapping="Wrap"/>
+
+                      <ItemsControl ItemsSource="{Binding SharedSceneVariables}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="ev:GraphVariable">
+                            <Border Background="#242938" CornerRadius="6" Padding="8" Margin="0,4,0,0">
+                              <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
+                                  <Button Classes="tool" Content="+ Get"
+                                          Click="OnSpawnGetVariableClick" FontSize="10" Foreground="#38BDF8"/>
+                                  <Button Classes="tool" Content="+ Set"
+                                          Click="OnSpawnSetVariableClick" FontSize="10" Foreground="#F59E0B"/>
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                  <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="11.5" Foreground="White"/>
+                                  <TextBlock Text="{Binding DefaultValue, StringFormat='Значение: {0}'}" FontSize="10" Foreground="#9CA3AF"/>
+                                </StackPanel>
+                              </DockPanel>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </DockPanel>
+          </TabItem>
+
+          <!-- TAB 3: SIMULATION LOGS -->
+          <TabItem Header="Отладка" FontSize="12" FontWeight="SemiBold">
+            <DockPanel Margin="10,8">
+              <Button DockPanel.Dock="Top" Classes="tool" Content="▶ Запустить симуляцию" Command="{Binding SimulateCommand}"
+                      Foreground="#34D399" Margin="0,0,0,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding SimulationLogs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Text="{Binding}" FontSize="11" Foreground="#D1D5DB" TextWrapping="Wrap" Margin="0,2"/>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </DockPanel>
+          </TabItem>
+        </TabControl>
+      </Border>
+
+      <!-- Splitter -->
+      <GridSplitter Grid.Column="1" Background="#2D3342" ResizeDirection="Columns"/>
+
+      <!-- CENTER: INTERACTIVE EVENT GRAPH CANVAS -->
+      <Border Grid.Column="2" Background="#14161D">
+        <v:EventGraphCanvas x:Name="CanvasCtrl"/>
+      </Border>
+    </Grid>
+  </DockPanel>
+</UserControl>

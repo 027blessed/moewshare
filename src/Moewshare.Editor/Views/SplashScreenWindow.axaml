@@ -1,0 +1,73 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Moewshare.Editor.Views.SplashScreenWindow"
+        Title="Moewshare Engine"
+        Icon="/Assets/icon.ico"
+        Width="520" Height="320"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        SystemDecorations="None"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent">
+
+  <Border Background="#2A1B1F" CornerRadius="18" BorderBrush="#F7CDD5" BorderThickness="1.5"
+          BoxShadow="0 14 36 0 #60000000" ClipToBounds="True" Margin="10">
+    <Grid>
+      <!-- Background subtle gradient/glow -->
+      <Border Background="#352026" Opacity="0.5"/>
+
+      <DockPanel Margin="24">
+        <!-- Top: Logo & Title like Unity -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,4,0,16">
+          <Border DockPanel.Dock="Left" Width="72" Height="72" CornerRadius="16" ClipToBounds="True"
+                  BorderBrush="#F7CDD5" BorderThickness="1.5" Margin="0,0,16,0" Background="#4A2930">
+            <Image Source="avares://Moewshare.Editor/Assets/icon.png" Stretch="UniformToFill"/>
+          </Border>
+
+          <StackPanel VerticalAlignment="Center" Spacing="4">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="MOEWSHARE" FontSize="24" FontWeight="Black" Foreground="#FFF4F3" LetterSpacing="2"/>
+              <Border Background="#F7CDD5" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
+                <TextBlock Text="ENGINE" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+              </Border>
+            </StackPanel>
+            <TextBlock Text="Персональный 2D/3D игровой движок · Babylon.js" FontSize="12" Foreground="#F7CDD5" Opacity="0.85"/>
+            <TextBlock Text="Версия 0.1.0 Preview (C# / .NET 10)" FontSize="11" Foreground="#C9A3AA"/>
+          </StackPanel>
+        </DockPanel>
+
+        <!-- Center: Decorative Paw & Engine Mascot banner -->
+        <Border DockPanel.Dock="Top" Background="#3D262D" CornerRadius="12" Padding="14,10" Margin="0,6,0,16">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Right" Text="🐾" FontSize="20" VerticalAlignment="Center" Opacity="0.8"/>
+            <StackPanel Spacing="2">
+              <TextBlock x:Name="ProjectTitleText" Text="Загрузка игрового проекта..."
+                         FontSize="13" FontWeight="SemiBold" Foreground="#FFF4F3"/>
+              <TextBlock x:Name="ProjectFolderText" Text="Подготовка рабочей области..."
+                         FontSize="11" Foreground="#C9A3AA" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+          </DockPanel>
+        </Border>
+
+        <!-- Bottom: Progress Bar and Status (Unity-style) -->
+        <StackPanel DockPanel.Dock="Bottom" VerticalAlignment="Bottom" Spacing="8">
+          <DockPanel>
+            <TextBlock x:Name="ProgressPercentText" DockPanel.Dock="Right" Text="0%"
+                       FontSize="11" FontWeight="Bold" Foreground="#F7CDD5"/>
+            <TextBlock x:Name="StatusMessageText" Text="Инициализация ядра движка..."
+                       FontSize="11" Foreground="#FCE8EC"/>
+          </DockPanel>
+
+          <!-- Unity-like sleek progress bar -->
+          <Border Height="8" CornerRadius="4" Background="#1D1215" ClipToBounds="True">
+            <ProgressBar x:Name="LoadingProgressBar" Minimum="0" Maximum="100" Value="0"
+                         Height="8" Background="Transparent" Foreground="#F7CDD5" BorderThickness="0"/>
+          </Border>
+
+          <TextBlock Text="© 2026 Moewshare Studio. Приятной разработки! ✨"
+                     FontSize="10" Foreground="#8C6B73" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+        </StackPanel>
+      </DockPanel>
+    </Grid>
+  </Border>
+</Window>
