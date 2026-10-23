@@ -4,22 +4,97 @@
              x:Class="Moewshare.Editor.Views.AssetsView"
              x:DataType="vm:AssetsPanelVM">
   <DockPanel Margin="8">
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-      <Button Classes="primary" Content="➕ Импорт файла…" Command="{Binding Editor.ImportAssetCommand}"/>
-      <Button Classes="soft" Content="🔄 Обновить" Command="{Binding Editor.RefreshAssetsCommand}"/>
-      <Button Classes="soft" Content="📂 Открыть папку Assets" Command="{Binding Editor.OpenAssetsFolderCommand}"/>
+    <!-- Top Actions Toolbar -->
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+      <WrapPanel Orientation="Horizontal">
+        <Button Classes="primary" Content="📁 + Папка" Command="{Binding Editor.CreateFolderCommand}"
+                Margin="0,0,4,4" ToolTip.Tip="Создать новую папку для организации ресурсов"/>
+        <Button Classes="primary" Content="➕ Импорт файла…" Command="{Binding Editor.ImportAssetCommand}"
+                Margin="0,0,4,4" ToolTip.Tip="Импортировать 3D модели (.obj, .fbx, .stl, .glb), текстуры или аудио"/>
+        <Button Classes="soft" Content="⬆ Наверх" Command="{Binding Editor.NavigateUpCommand}"
+                IsEnabled="{Binding Editor.CanNavigateUp}" Margin="0,0,4,4" ToolTip.Tip="Подняться на уровень выше"/>
+        <Button Classes="soft" Content="🔄 Обновить" Command="{Binding Editor.RefreshAssetsCommand}"
+                Margin="0,0,4,4" ToolTip.Tip="Пересканировать папку ресурсов"/>
+        <Button Classes="soft" Content="📂 В проводнике" Command="{Binding Editor.OpenAssetsFolderCommand}"
+                Margin="0,0,4,4" ToolTip.Tip="Открыть папку проекта в Finder / Проводнике"/>
+      </WrapPanel>
+
+      <!-- Path breadcrumb bar -->
+      <Border Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" CornerRadius="8" Padding="10,5">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Right" Text="{Binding Editor.CurrentFolderAssets.Count, StringFormat='{}{0} объ.'}"
+                     FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <TextBlock Text="📁" FontSize="13" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Editor.CurrentAssetRelativePath}" FontSize="12" FontWeight="Bold"
+                       TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+          </StackPanel>
+        </DockPanel>
+      </Border>
     </StackPanel>
 
-    <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10">
-      <ListBox ItemsSource="{Binding Editor.Assets}" Background="Transparent">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <DockPanel Margin="2">
-              <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
-            </DockPanel>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+    <!-- Bottom Help / Drag-and-Drop Hint -->
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,6,0,0">
+      <TextBlock Classes="caption" Text="💡 Перетащите файл на папку, чтобы переместить. 3D-модели и картинки можно тянуть прямо на сцену."/>
+    </StackPanel>
+
+    <!-- Assets List -->
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+      <Grid>
+        <ListBox x:Name="AssetsListBox" ItemsSource="{Binding Editor.CurrentFolderAssets}" SelectionMode="Single">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="vm:AssetItemVM">
+              <Border Classes="row" Classes.folder="{Binding IsDirectory}" Classes.drop="{Binding IsDropTarget}"
+                      Padding="6,4">
+                <Border.ContextFlyout>
+                  <MenuFlyout>
+                    <MenuItem Header="📂 Открыть папку" Command="{Binding OpenFolderCommand}"
+                              IsVisible="{Binding IsDirectory}"/>
+                    <MenuItem Header="✨ Поставить 3D модель на сцену" Command="{Binding PutOnSceneCommand}"
+                              IsVisible="{Binding IsModel}"/>
+                    <MenuItem Header="🖼️ Создать 2D спрайт на сцене" Command="{Binding PutOnSceneCommand}"
+                              IsVisible="{Binding IsTexture}"/>
+                    <Separator IsVisible="{Binding CanBePutOnScene}"/>
+                    <MenuItem Header="🗑️ Удалить" Command="{Binding DeleteCommand}"/>
+                  </MenuFlyout>
+                </Border.ContextFlyout>
+                <DockPanel Background="Transparent">
+                  <!-- Right actions -->
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding DisplaySize}" Classes="caption" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <Button Classes="soft" Content="✨ На сцену" FontSize="10" Padding="6,2"
+                            Command="{Binding PutOnSceneCommand}"
+                            IsVisible="{Binding CanBePutOnScene}"
+                            ToolTip.Tip="Добавить этот ресурс прямо на 3D сцену"/>
+                    <Button Classes="soft" Content="📂 Открыть" FontSize="10" Padding="6,2"
+                            Command="{Binding OpenFolderCommand}"
+                            IsVisible="{Binding IsDirectory}"
+                            ToolTip.Tip="Открыть содержимое папки"/>
+                    <Button Classes="tool" Content="🗑️" FontSize="11" Width="22" Height="22" Padding="0"
+                            Command="{Binding DeleteCommand}"
+                            ToolTip.Tip="Удалить этот файл или папку"/>
+                  </StackPanel>
+
+                  <!-- Left: Icon + Name -->
+                  <DockPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Icon}" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Name}" VerticalAlignment="Center"/>
+                  </DockPanel>
+                </DockPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Empty state placeholder -->
+        <StackPanel IsVisible="{Binding !Editor.CurrentFolderAssets.Count}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="16">
+          <TextBlock Text="📂" FontSize="36" HorizontalAlignment="Center" Opacity="0.5"/>
+          <TextBlock Text="В этой папке пока нет файлов" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"/>
+          <TextBlock Text="Нажмите «➕ Импорт файла…» или «📁 + Папка» вверху" Classes="caption" FontSize="11" HorizontalAlignment="Center"/>
+        </StackPanel>
+      </Grid>
     </Border>
   </DockPanel>
 </UserControl>

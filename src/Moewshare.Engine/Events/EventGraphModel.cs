@@ -236,6 +236,27 @@ public sealed class GraphVariable : INotifyPropertyChanged
     public GraphVariable Clone() => new(Name, Type, DefaultValue, Scope, Description);
 }
 
+/// <summary>
+/// Группа (рамка-комментарий) на полотне графа: объединяет несколько блоков,
+/// которые перемещаются вместе. Не влияет на выполнение логики.
+/// </summary>
+public sealed class EventGroup
+{
+    public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8];
+    public string Title { get; set; } = "Группа";
+    /// <summary>Цвет рамки группы в формате #RRGGBB.</summary>
+    public string Color { get; set; } = "#E05263";
+    public List<string> NodeIds { get; set; } = [];
+
+    public EventGroup Clone() => new()
+    {
+        Id = Guid.NewGuid().ToString("N")[..8],
+        Title = Title,
+        Color = Color,
+        NodeIds = [.. NodeIds]
+    };
+}
+
 public sealed class EventGraph
 {
     public int FormatVersion { get; set; } = 1;
@@ -244,9 +265,13 @@ public sealed class EventGraph
     public List<EventConnection> Connections { get; set; } = [];
     public List<GraphVariable> Variables { get; set; } = [];
     public List<string> CustomEvents { get; set; } = [];
+    /// <summary>Визуальные группы блоков (только для редактора).</summary>
+    public List<EventGroup> Groups { get; set; } = [];
 
     public EventNode? FindNode(string id) => Nodes.FirstOrDefault(n => n.Id == id);
     public GraphVariable? FindVariable(string name) => Variables.FirstOrDefault(v => v.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    public EventGroup? FindGroup(string id) => Groups.FirstOrDefault(g => g.Id == id);
+    public EventGroup? FindGroupOfNode(string nodeId) => Groups.FirstOrDefault(g => g.NodeIds.Contains(nodeId));
 
     public void AddNode(EventNode node)
     {
@@ -260,7 +285,35 @@ public sealed class EventGraph
     {
         Nodes.RemoveAll(n => n.Id == nodeId);
         Connections.RemoveAll(c => c.FromNodeId == nodeId || c.ToNodeId == nodeId);
+        foreach (var g in Groups) g.NodeIds.Remove(nodeId);
+        Groups.RemoveAll(g => g.NodeIds.Count == 0);
     }
+
+    /// <summary>Удаляет сразу несколько блоков вместе со всеми их связями.</summary>
+    public int RemoveNodes(IEnumerable<string> nodeIds)
+    {
+        var set = nodeIds.ToHashSet();
+        if (set.Count == 0) return 0;
+        int removed = Nodes.RemoveAll(n => set.Contains(n.Id));
+        Connections.RemoveAll(c => set.Contains(c.FromNodeId) || set.Contains(c.ToNodeId));
+        foreach (var g in Groups) g.NodeIds.RemoveAll(set.Contains);
+        Groups.RemoveAll(g => g.NodeIds.Count == 0);
+        return removed;
+    }
+
+    /// <summary>Создаёт группу из указанных блоков (блок может состоять только в одной группе).</summary>
+    public EventGroup? CreateGroup(IEnumerable<string> nodeIds, string title = "Группа", string color = "#E05263")
+    {
+        var ids = nodeIds.Where(id => FindNode(id) is not null).Distinct().ToList();
+        if (ids.Count == 0) return null;
+        foreach (var g in Groups) g.NodeIds.RemoveAll(ids.Contains);
+        Groups.RemoveAll(g => g.NodeIds.Count == 0);
+        var group = new EventGroup { Title = title, Color = color, NodeIds = ids };
+        Groups.Add(group);
+        return group;
+    }
+
+    public void RemoveGroup(string groupId) => Groups.RemoveAll(g => g.Id == groupId);
 
     public bool CanConnect(EventNode fromNode, EventPort fromPort, EventNode toNode, EventPort toPort, out string reason)
     {

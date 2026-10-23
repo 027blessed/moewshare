@@ -13,6 +13,10 @@ public abstract partial class EditorPanelVM : ObservableObject
     [ObservableProperty] DockZone _zone;
     [ObservableProperty] int _order;
     [ObservableProperty] bool _isVisible = true;
+    /// <summary>Вкладка открыта (активна) в своей зоне — для подсветки заголовка.</summary>
+    [ObservableProperty] bool _isActive;
+    /// <summary>Подсказка для вкладки с горячей клавишей.</summary>
+    public string HotkeyHint { get; set; } = "";
 
     public EditorViewModel Editor { get; }
     readonly Action<EditorPanelVM, DockZone> _onMove;

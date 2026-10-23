@@ -8,7 +8,7 @@
     </StackPanel>
     <Border DockPanel.Dock="Bottom" Margin="0,16,0,0">
       <DockPanel>
-        <TextBlock DockPanel.Dock="Top" Foreground="#C0392B" Margin="0,0,0,8" Text="{Binding Error}" TextWrapping="Wrap"/>
+        <TextBlock DockPanel.Dock="Top" Classes="danger" Margin="0,0,0,8" Text="{Binding Error}" TextWrapping="Wrap"/>
         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
           <Button Classes="soft" Content="Отмена" Command="{Binding CancelCommand}"/>
           <Button Classes="soft" Content="Назад" IsVisible="{Binding CanBack}" Command="{Binding BackCommand}"/>
@@ -24,7 +24,7 @@
           <DataTemplate>
             <StackPanel Width="230" Spacing="6" Margin="6">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <Border Background="{DynamicResource AccentBrush}" CornerRadius="999" Padding="10,3"><TextBlock Text="{Binding KindLabel}" FontSize="11" FontWeight="Bold"/></Border>
+                <Border Classes="pill"><TextBlock Text="{Binding KindLabel}"/></Border>
                 <TextBlock Text="{Binding Status}" Classes="muted" FontSize="11" VerticalAlignment="Center"/>
               </StackPanel>
               <TextBlock Classes="h2" Text="{Binding Name}"/>

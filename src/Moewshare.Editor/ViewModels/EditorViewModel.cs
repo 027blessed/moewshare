@@ -13,6 +13,7 @@ public interface IEditorUi
     Task<string?> PickFileAsync(string title, string startDir);
     Task<string?> PickFolderAsync(string title);
     Task<bool> ConfirmAsync(string title, string message, string okText);
+    Task<string?> PromptAsync(string title, string message, string defaultValue = "");
     Task MessageAsync(string title, string message);
     Task ShowAddObjectDialogAsync(EditorViewModel editor);
     Task ShowSettingsDialogAsync(EditorViewModel editor);
@@ -36,7 +37,52 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     public ObservableCollection<string> Log { get; } = [];
     public ObservableCollection<ConsoleEntry> ConsoleEntries { get; } = [];
     public ObservableCollection<string> Assets { get; } = [];
+    public ObservableCollection<AssetItemVM> CurrentFolderAssets { get; } = [];
     public ObservableCollection<string> AvailableTextures { get; } = [];
+    public ObservableCollection<string> AvailableModels { get; } = [];
+
+    string _currentAssetDirectory = "";
+    public string CurrentAssetDirectory
+    {
+        get => string.IsNullOrEmpty(_currentAssetDirectory) && !string.IsNullOrEmpty(_folder) ? Path.Combine(_folder, "Assets") : _currentAssetDirectory;
+        set
+        {
+            if (SetProperty(ref _currentAssetDirectory, value))
+            {
+                OnPropertyChanged(nameof(CurrentAssetRelativePath));
+                OnPropertyChanged(nameof(CanNavigateUp));
+            }
+        }
+    }
+
+    public string CurrentAssetRelativePath
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_folder)) return "Assets";
+            var cur = string.IsNullOrEmpty(_currentAssetDirectory) ? Path.Combine(_folder, "Assets") : _currentAssetDirectory;
+            var rel = Path.GetRelativePath(_folder, cur).Replace('\\', '/');
+            return string.IsNullOrEmpty(rel) || rel == "." ? "Assets" : rel;
+        }
+    }
+
+    public bool CanNavigateUp
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_folder)) return false;
+            var rootAssets = Path.GetFullPath(Path.Combine(_folder, "Assets"));
+            var cur = Path.GetFullPath(CurrentAssetDirectory);
+            return !cur.Equals(rootAssets, StringComparison.OrdinalIgnoreCase) && cur.StartsWith(rootAssets, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    AssetItemVM? _draggedAsset;
+    public AssetItemVM? DraggedAsset
+    {
+        get => _draggedAsset;
+        set => SetProperty(ref _draggedAsset, value);
+    }
 
     public string[] BehaviorList => Behaviors.All;
     public string[] CameraList => CameraModes.All;
@@ -114,6 +160,12 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         AllPanels.Add(new AssetsPanelVM(this, MovePanel));
         AllPanels.Add(new ConsolePanelVM(this, MovePanel));
         AllPanels.Add(new GamePanelVM(this, MovePanel));
+        foreach (var p in AllPanels)
+        {
+            var idx = PanelHotkeyOrder.IndexOf(p.Id);
+            if (idx >= 0) p.HotkeyHint = $"{p.Title}  ({Hk.Label(new Avalonia.Input.KeyGesture(Avalonia.Input.Key.D1 + idx, Hk.Mod))})";
+            else p.HotkeyHint = p.Title;
+        }
         RefreshZoneCollections();
     }
 
@@ -323,6 +375,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     public bool CanAttach(ObjectVM child, ObjectVM? parent)
     {
         if (child.IsLocked) return false;
+        if (child.IsCanvas) return false;
         if (parent is not null && parent.IsLocked) return false;
         if (parent is null) return true;
         if (child == parent) return false;
@@ -336,20 +389,31 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         return true;
     }
 
-    public List<ParentOption> CurrentParentOptions
+    bool _isSyncingParentOption;
+    public ObservableCollection<ParentOption> CurrentParentOptions { get; } = [];
+
+    public void RefreshParentOptions()
     {
-        get
+        _isSyncingParentOption = true;
+        try
         {
-            var list = new List<ParentOption> { new(null, "— Корень сцены (Без родителя) —") };
-            if (Selected is null) return list;
-            foreach (var obj in Objects)
+            CurrentParentOptions.Clear();
+            CurrentParentOptions.Add(new(null, "— Корень сцены (Без родителя) —"));
+            if (Selected is not null)
             {
-                if (CanAttach(Selected, obj))
+                foreach (var obj in Objects)
                 {
-                    list.Add(new(obj.Id, $"{obj.HierarchyPrefix}{obj.Name}"));
+                    if (CanAttach(Selected, obj))
+                    {
+                        CurrentParentOptions.Add(new(obj.Id, $"{obj.HierarchyPrefix}{obj.Name}"));
+                    }
                 }
             }
-            return list;
+            OnPropertyChanged(nameof(SelectedParentOption));
+        }
+        finally
+        {
+            _isSyncingParentOption = false;
         }
     }
 
@@ -358,16 +422,75 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         get
         {
             if (Selected is null) return null;
-            return CurrentParentOptions.FirstOrDefault(p => p.Id == Selected.ParentId)
-                ?? CurrentParentOptions.FirstOrDefault();
+            if (string.IsNullOrEmpty(Selected.ParentId))
+                return CurrentParentOptions.FirstOrDefault(p => p.Id == null);
+            return CurrentParentOptions.FirstOrDefault(p => p.Id == Selected.ParentId);
         }
         set
         {
-            if (Selected is not null && value is not null && Selected.ParentId != value.Id)
+            if (_isSyncingParentOption || Selected is null || value is null) return;
+            if (Selected.ParentId != value.Id)
             {
                 AttachTo(Selected, Objects.FirstOrDefault(o => o.Id == value.Id));
             }
         }
+    }
+
+    public Vec3 GetWorldPosition(ObjectVM vm)
+    {
+        var chain = new List<ObjectVM>();
+        var cur = vm;
+        int depth = 0;
+        while (cur is not null && depth++ < 30)
+        {
+            chain.Add(cur);
+            if (string.IsNullOrEmpty(cur.ParentId)) break;
+            var parent = Objects.FirstOrDefault(o => o.Id == cur.ParentId);
+            if (parent is null || parent == cur || chain.Contains(parent)) break;
+            cur = parent;
+        }
+        chain.Reverse();
+
+        var worldPos = new Vec3(0, 0, 0);
+        var accumRot = new Vec3(0, 0, 0);
+
+        for (int i = 0; i < chain.Count; i++)
+        {
+            var node = chain[i];
+            if (i == 0)
+            {
+                worldPos = new Vec3(node.PosX, node.PosY, node.PosZ);
+                accumRot = new Vec3(node.RotX, node.RotY, node.RotZ);
+            }
+            else
+            {
+                var localOffset = new Vec3(node.PosX, node.PosY, node.PosZ);
+                var rotatedOffset = RotateVec3(localOffset, accumRot);
+                worldPos.X += rotatedOffset.X;
+                worldPos.Y += rotatedOffset.Y;
+                worldPos.Z += rotatedOffset.Z;
+                accumRot.X = (accumRot.X + node.RotX) % 360;
+                accumRot.Y = (accumRot.Y + node.RotY) % 360;
+                accumRot.Z = (accumRot.Z + node.RotZ) % 360;
+            }
+        }
+        return worldPos;
+    }
+
+    public static Vec3 RotateVec3(Vec3 pt, Vec3 rotDeg)
+    {
+        var radX = rotDeg.X * Math.PI / 180.0;
+        var radY = rotDeg.Y * Math.PI / 180.0;
+        var radZ = rotDeg.Z * Math.PI / 180.0;
+
+        var y1 = pt.Y * Math.Cos(radX) - pt.Z * Math.Sin(radX);
+        var z1 = pt.Y * Math.Sin(radX) + pt.Z * Math.Cos(radX);
+        var x2 = pt.X * Math.Cos(radY) + z1 * Math.Sin(radY);
+        var z2 = -pt.X * Math.Sin(radY) + z1 * Math.Cos(radY);
+        var x3 = x2 * Math.Cos(radZ) - y1 * Math.Sin(radZ);
+        var y3 = x2 * Math.Sin(radZ) + y1 * Math.Cos(radZ);
+
+        return new Vec3(x3, y3, z2);
     }
 
     public IEnumerable<ObjectVM> AvailableParents => Selected is null ? [] : Objects.Where(o => o != Selected && CanAttach(Selected, o));
@@ -474,19 +597,31 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     {
         if (!CanAttach(child, parent))
         {
-            Say("Нельзя привязать объект: циклическая зависимость.", ConsoleLevel.Warning);
+            Say("Нельзя привязать объект: циклическая зависимость или объект заблокирован.", ConsoleLevel.Warning);
             return;
         }
+
+        var childWorldPos = GetWorldPosition(child);
 
         child.ParentId = parent?.Id;
         if (parent is not null)
         {
             parent.IsExpanded = true;
+            var parentWorldPos = GetWorldPosition(parent);
+            child.PosX = Math.Round(childWorldPos.X - parentWorldPos.X, 3);
+            child.PosY = Math.Round(childWorldPos.Y - parentWorldPos.Y, 3);
+            child.PosZ = Math.Round(childWorldPos.Z - parentWorldPos.Z, 3);
         }
+        else
+        {
+            child.PosX = Math.Round(childWorldPos.X, 3);
+            child.PosY = Math.Round(childWorldPos.Y, 3);
+            child.PosZ = Math.Round(childWorldPos.Z, 3);
+        }
+
         RefreshHierarchyTree();
+        RefreshParentOptions();
         Changed();
-        OnPropertyChanged(nameof(CurrentParentOptions));
-        OnPropertyChanged(nameof(SelectedParentOption));
         OnPropertyChanged(nameof(SelectedParent));
         OnPropertyChanged(nameof(AvailableParents));
         OnPropertyChanged(nameof(SelectedCanvasChildren));
@@ -601,7 +736,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         else InfoCount++;
     }
 
-    public void Changed() { IsDirty = true; UpdateTitle(); SceneChanged?.Invoke(); }
+    public void Changed() { IsDirty = true; UpdateTitle(); RecordHistory(); SceneChanged?.Invoke(); }
     void UpdateTitle() => Title = $"{(IsDirty ? "● " : "")}{_project?.Name ?? "—"} · {Path.GetFileName(_scenePath)} — Moewshare Engine Editor";
 
     partial void OnSelectedChanged(ObjectVM? value)
@@ -623,8 +758,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         SyncSelectionVisuals();
         OnPropertyChanged(nameof(SelectedParent));
         OnPropertyChanged(nameof(AvailableParents));
-        OnPropertyChanged(nameof(CurrentParentOptions));
-        OnPropertyChanged(nameof(SelectedParentOption));
+        RefreshParentOptions();
         OnPropertyChanged(nameof(SelectedCanvasChildren));
         OnPropertyChanged(nameof(HasMultipleSelection));
         OnPropertyChanged(nameof(SelectionCount));
@@ -664,8 +798,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         SyncSelectionVisuals();
         OnPropertyChanged(nameof(SelectedParent));
         OnPropertyChanged(nameof(AvailableParents));
-        OnPropertyChanged(nameof(CurrentParentOptions));
-        OnPropertyChanged(nameof(SelectedParentOption));
+        RefreshParentOptions();
         OnPropertyChanged(nameof(SelectedCanvasChildren));
         OnPropertyChanged(nameof(HasMultipleSelection));
         OnPropertyChanged(nameof(SelectionCount));
@@ -726,7 +859,10 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CameraZoom));
         OnPropertyChanged(nameof(CameraFollow));
         OnPropertyChanged(nameof(Background));
-        IsDirty = false; UpdateTitle(); SceneChanged?.Invoke();
+        IsDirty = false; UpdateTitle();
+        ResetHistory();
+        SceneRestored?.Invoke();
+        SceneChanged?.Invoke();
         Say($"Сцена загружена: {Path.GetRelativePath(_folder, path)}", ConsoleLevel.Info);
         return true;
     }
@@ -796,6 +932,19 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
                 break;
             case "plane":
                 Add(new SceneObject { Type = ObjectTypes.Plane, Name = Unique("Plane"), Color = "#E8F8F5", Position = new(0, 0, 0), Scale = new(10, 1, 10) }, asChild);
+                break;
+            case "model":
+                var mdl = new SceneObject
+                {
+                    Type = ObjectTypes.Model,
+                    Name = Unique("3DModel"),
+                    Color = "#DCDDE1",
+                    Position = new(0, 0, 0),
+                    Scale = new(1, 1, 1),
+                    Solid = true
+                };
+                Add(mdl, asChild);
+                Say("Создан объект 3D модели. Выберите файл .obj, .fbx, .stl или .glb в инспекторе или перетащите файл из ресурсов.", ConsoleLevel.Success);
                 break;
             case "light":
                 Add(NewObject(ObjectTypes.Light, "Light", "#FFFFFF"), asChild);
@@ -1082,19 +1231,13 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         foreach (var orig in toDup)
         {
             var m = orig.Model;
-            var clone = new SceneObject
-            {
-                Name = Unique(m.Name),
-                Type = m.Type,
-                Position = new(m.Position.X + 1, m.Position.Y, m.Position.Z + 1),
-                Rotation = new(m.Rotation.X, m.Rotation.Y, m.Rotation.Z),
-                Scale = new(m.Scale.X, m.Scale.Y, m.Scale.Z),
-                Color = m.Color,
-                Texture = m.Texture,
-                Solid = m.Solid,
-                Behavior = m.Behavior,
-                ParentId = m.ParentId
-            };
+            // Полная копия объекта (компоненты, UI-настройки, граф логики), но с новым Id и именем.
+            var clone = CloneSceneObject(m);
+            clone.Name = Unique(m.Name);
+            if (!clone.Type.StartsWith("ui_") && clone.Type != ObjectTypes.Canvas)
+                clone.Position = new(m.Position.X + 1, m.Position.Y, m.Position.Z + 1);
+            else
+                clone.Position = new(m.Position.X + 20, m.Position.Y - 20, m.Position.Z);
             var vm = CreateVM(clone);
             Objects.Add(vm);
             created.Add(vm);
@@ -1114,8 +1257,8 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     {
         if (Selected is null && SelectedObjects.Count == 0) return;
         var toDel = SelectedObjects.Count > 1 ? SelectedObjects.ToList() : [Selected!];
-        var prompt = toDel.Count == 1 ? $"Удалить «{toDel[0].Name}» из сцены?" : $"Удалить {toDel.Count} выбранных объектов из сцены?";
-        if (!await _ui.ConfirmAsync("Удаление объекта", prompt, "Удалить")) return;
+        // Подтверждение не требуется: удаление можно отменить через Ctrl+Z / ⌘Z.
+        await Task.CompletedTask;
 
         foreach (var obj in toDel)
         {
@@ -1132,6 +1275,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
         SyncSelectionVisuals();
         Changed();
         Say(toDel.Count == 1 ? $"Объект «{toDel[0].Name}» удалён." : $"Удалено объектов: {toDel.Count}.", ConsoleLevel.Info);
+        StatusText = $"Удалено: {toDel.Count} · {Hk.Label(Hk.Undo)} — вернуть";
     }
 
     [RelayCommand]
@@ -1209,16 +1353,23 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     public async Task ImportAsset()
     {
         if (!IsLoaded) return;
-        var f = await _ui.PickFileAsync("Импорт ресурса в проект", Environment.GetFolderPath(Environment.SpecialFolder.MyPictures));
+        var startFolder = Directory.Exists(CurrentAssetDirectory) ? CurrentAssetDirectory : Path.Combine(_folder, "Assets");
+        var f = await _ui.PickFileAsync("Импорт ресурса (3D модели, текстуры, аудио)", startFolder);
         if (f is null) return;
         try
         {
             var assetsDir = Path.Combine(_folder, "Assets");
             var ext = Path.GetExtension(f).ToLowerInvariant();
-            var targetFolder = assetsDir;
-            if (ext is ".png" or ".jpg" or ".jpeg" or ".webp" or ".svg") targetFolder = Path.Combine(assetsDir, "Textures");
-            else if (ext is ".glb" or ".gltf" or ".obj") targetFolder = Path.Combine(assetsDir, "Models");
-            else if (ext is ".mp3" or ".wav" or ".ogg") targetFolder = Path.Combine(assetsDir, "Audio");
+
+            // If user is currently in a subfolder, put it directly there; otherwise categorize by extension
+            var targetFolder = CurrentAssetDirectory;
+            if (string.IsNullOrEmpty(targetFolder) || Path.GetFullPath(targetFolder).Equals(Path.GetFullPath(assetsDir), StringComparison.OrdinalIgnoreCase))
+            {
+                if (ext is ".png" or ".jpg" or ".jpeg" or ".webp" or ".svg") targetFolder = Path.Combine(assetsDir, "Textures");
+                else if (ext is ".obj" or ".fbx" or ".stl" or ".glb" or ".gltf") targetFolder = Path.Combine(assetsDir, "Models");
+                else if (ext is ".mp3" or ".wav" or ".ogg") targetFolder = Path.Combine(assetsDir, "Audio");
+                else targetFolder = assetsDir;
+            }
 
             Directory.CreateDirectory(targetFolder);
             var dest = Path.Combine(targetFolder, Path.GetFileName(f));
@@ -1228,6 +1379,190 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
             Say($"Ресурс успешно импортирован: {Path.GetRelativePath(_folder, dest)}", ConsoleLevel.Success);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Say("Ошибка импорта: " + ex.Message, ConsoleLevel.Error); }
+    }
+
+    [RelayCommand]
+    public async Task CreateFolder()
+    {
+        if (!IsLoaded) return;
+        var dirName = await _ui.PromptAsync("Создать новую папку", "Введите название новой папки:", "Новая папка");
+        if (string.IsNullOrWhiteSpace(dirName)) return;
+
+        try
+        {
+            var target = Path.Combine(CurrentAssetDirectory, dirName.Trim());
+            if (!Directory.Exists(target))
+            {
+                Directory.CreateDirectory(target);
+                RefreshAssets();
+                Say($"Папка «{dirName}» успешно создана.", ConsoleLevel.Success);
+            }
+            else
+            {
+                Say($"Папка «{dirName}» уже существует.", ConsoleLevel.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Say($"Ошибка создания папки: {ex.Message}", ConsoleLevel.Error);
+        }
+    }
+
+    [RelayCommand]
+    public async Task DeleteAsset(AssetItemVM? item)
+    {
+        if (!IsLoaded || item is null) return;
+        var isDir = item.IsDirectory;
+        var confirmed = await _ui.ConfirmAsync("Удаление ресурса", $"Удалить {(isDir ? "папку со всем содержимым" : "файл")} «{item.Name}»?", "Удалить");
+        if (!confirmed) return;
+
+        try
+        {
+            if (isDir)
+            {
+                if (Directory.Exists(item.FullPath)) Directory.Delete(item.FullPath, true);
+            }
+            else
+            {
+                if (File.Exists(item.FullPath)) File.Delete(item.FullPath);
+            }
+            RefreshAssets();
+            Say($"«{item.Name}» удалён.", ConsoleLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            Say($"Не удалось удалить: {ex.Message}", ConsoleLevel.Error);
+        }
+    }
+
+    [RelayCommand]
+    public void NavigateIntoFolder(AssetItemVM? item)
+    {
+        if (item is null || !item.IsDirectory) return;
+        CurrentAssetDirectory = item.FullPath;
+        RefreshAssets();
+    }
+
+    [RelayCommand]
+    public void NavigateUp()
+    {
+        if (!CanNavigateUp) return;
+        var parent = Directory.GetParent(CurrentAssetDirectory);
+        if (parent is not null)
+        {
+            CurrentAssetDirectory = parent.FullName;
+            RefreshAssets();
+        }
+    }
+
+    public void MoveAssetToFolder(AssetItemVM source, AssetItemVM targetFolder)
+    {
+        if (source is null || targetFolder is null || !targetFolder.IsDirectory) return;
+        if (source.FullPath.Equals(targetFolder.FullPath, StringComparison.OrdinalIgnoreCase)) return;
+
+        try
+        {
+            var dest = Path.Combine(targetFolder.FullPath, source.Name);
+            if (source.IsDirectory)
+            {
+                if (dest.StartsWith(source.FullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    Say("Нельзя переместить папку саму в себя.", ConsoleLevel.Warning);
+                    return;
+                }
+                Directory.Move(source.FullPath, dest);
+            }
+            else
+            {
+                File.Move(source.FullPath, dest, overwrite: true);
+            }
+            RefreshAssets();
+            Say($"«{source.Name}» перемещён в «{targetFolder.Name}».", ConsoleLevel.Success);
+        }
+        catch (Exception ex)
+        {
+            Say($"Ошибка перемещения файла: {ex.Message}", ConsoleLevel.Error);
+        }
+    }
+
+    [RelayCommand]
+    public void PutAssetOnScene(AssetItemVM? item)
+    {
+        if (item is null) return;
+        SpawnAssetOnScene(item, null);
+    }
+
+    public void SpawnAssetOnScene(AssetItemVM item, Vec3? spawnPos)
+    {
+        if (!IsLoaded || item is null) return;
+        var name = Path.GetFileNameWithoutExtension(item.Name);
+        var pos = spawnPos ?? new Vec3(0, 0, 0);
+
+        if (item.IsModel)
+        {
+            var obj = new SceneObject
+            {
+                Id = Guid.NewGuid().ToString("N")[..8],
+                Name = string.IsNullOrWhiteSpace(name) ? "Model" : name,
+                Type = ObjectTypes.Model,
+                ModelPath = item.RelativePath,
+                Position = pos,
+                Rotation = new Vec3(0, 0, 0),
+                Scale = new Vec3(1, 1, 1),
+                Color = "#DCDDE1",
+                Solid = true
+            };
+            Add(obj);
+            Say($"3D модель «{obj.Name}» добавлена на сцену в ({pos.X}, {pos.Y}, {pos.Z})!", ConsoleLevel.Success);
+        }
+        else if (item.IsTexture)
+        {
+            var obj = new SceneObject
+            {
+                Id = Guid.NewGuid().ToString("N")[..8],
+                Name = string.IsNullOrWhiteSpace(name) ? "Sprite" : name,
+                Type = ObjectTypes.Sprite,
+                Texture = item.RelativePath,
+                Position = pos,
+                Rotation = new Vec3(0, 0, 0),
+                Scale = new Vec3(1, 1, 1),
+                Color = "#FFFFFF",
+                Solid = false
+            };
+            Add(obj);
+            Say($"2D спрайт «{obj.Name}» добавлен на сцену в ({pos.X}, {pos.Y}, {pos.Z})!", ConsoleLevel.Success);
+        }
+    }
+
+    [RelayCommand]
+    public async Task ChooseModelForSelected()
+    {
+        if (Selected is null || !IsLoaded) return;
+        var modelsDir = Path.Combine(_folder, "Assets", "Models");
+        Directory.CreateDirectory(modelsDir);
+        var f = await _ui.PickFileAsync("Выбрать файл 3D модели (OBJ, FBX, STL, GLB, GLTF)", modelsDir);
+        if (f is null) return;
+        try
+        {
+            var dest = Path.Combine(modelsDir, Path.GetFileName(f));
+            if (!Path.GetFullPath(f).Equals(Path.GetFullPath(dest), StringComparison.OrdinalIgnoreCase))
+            {
+                File.Copy(f, dest, true);
+            }
+            RefreshAssets();
+            var rel = Path.GetRelativePath(_folder, dest).Replace('\\', '/');
+            Selected.ModelPath = rel;
+            Say($"3D модель для «{Selected.Name}» установлена: {rel}", ConsoleLevel.Success);
+        }
+        catch (Exception ex) { Say("Не удалось применить 3D модель: " + ex.Message, ConsoleLevel.Error); }
+    }
+
+    [RelayCommand]
+    public void ClearModelForSelected()
+    {
+        if (Selected is null) return;
+        Selected.ModelPath = null;
+        Say($"3D модель с «{Selected.Name}» удалена.");
     }
 
     [RelayCommand]
@@ -1306,13 +1641,20 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
     public void RefreshAssets()
     {
         Assets.Clear();
+        CurrentFolderAssets.Clear();
         AvailableTextures.Clear();
         AvailableTextures.Add("(Без текстуры)");
+        AvailableModels.Clear();
+        AvailableModels.Add("(Без 3D модели)");
 
-        var dir = Path.Combine(_folder, "Assets");
-        if (!Directory.Exists(dir)) return;
+        var assetsRoot = Path.Combine(_folder, "Assets");
+        if (!Directory.Exists(assetsRoot))
+        {
+            Directory.CreateDirectory(assetsRoot);
+        }
 
-        foreach (var f in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).OrderBy(x => x))
+        // 1. Scan all files for textures & models collections
+        foreach (var f in Directory.EnumerateFiles(assetsRoot, "*", SearchOption.AllDirectories).OrderBy(x => x))
         {
             var rel = Path.GetRelativePath(_folder, f).Replace('\\', '/');
             Assets.Add(rel);
@@ -1321,8 +1663,86 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
             {
                 AvailableTextures.Add(rel);
             }
+            else if (ext is ".obj" or ".fbx" or ".stl" or ".glb" or ".gltf")
+            {
+                AvailableModels.Add(rel);
+            }
         }
-        if (Assets.Count == 0) Assets.Add("(папка Assets пуста)");
+
+        // 2. Scan current folder for folder navigation and file listing
+        var curDir = CurrentAssetDirectory;
+        if (!Directory.Exists(curDir))
+        {
+            curDir = assetsRoot;
+            CurrentAssetDirectory = curDir;
+        }
+
+        try
+        {
+            // First directories
+            foreach (var d in Directory.EnumerateDirectories(curDir).OrderBy(x => Path.GetFileName(x)))
+            {
+                var dirName = Path.GetFileName(d);
+                if (dirName.StartsWith(".")) continue;
+                var rel = Path.GetRelativePath(_folder, d).Replace('\\', '/');
+                int fileCount = 0;
+                try { fileCount = Directory.EnumerateFileSystemEntries(d).Count(); } catch { }
+                CurrentFolderAssets.Add(new AssetItemVM
+                {
+                    Editor = this,
+                    Name = dirName,
+                    FullPath = d,
+                    RelativePath = rel,
+                    IsDirectory = true,
+                    Kind = AssetKind.Folder,
+                    Extension = "",
+                    Icon = "📁",
+                    DisplaySize = $"{fileCount} объектов"
+                });
+            }
+
+            // Next files
+            foreach (var f in Directory.EnumerateFiles(curDir).OrderBy(x => Path.GetFileName(x)))
+            {
+                var fileName = Path.GetFileName(f);
+                if (fileName.StartsWith(".")) continue;
+                var rel = Path.GetRelativePath(_folder, f).Replace('\\', '/');
+                var ext = Path.GetExtension(f).ToLowerInvariant();
+                var (kind, icon) = ext switch
+                {
+                    ".obj" or ".fbx" or ".stl" or ".glb" or ".gltf" => (AssetKind.Model3D, "🧊"),
+                    ".png" or ".jpg" or ".jpeg" or ".webp" or ".svg" => (AssetKind.Texture, "🖼️"),
+                    ".mp3" or ".wav" or ".ogg" => (AssetKind.Audio, "🎵"),
+                    ".json" when fileName.EndsWith(".scene.json") => (AssetKind.Scene, "🎬"),
+                    _ => (AssetKind.Other, "📄")
+                };
+
+                string sizeStr = "";
+                try
+                {
+                    var len = new FileInfo(f).Length;
+                    sizeStr = len < 1024 ? $"{len} Б" : len < 1024 * 1024 ? $"{len / 1024.0:F1} КБ" : $"{len / (1024.0 * 1024.0):F1} МБ";
+                }
+                catch { }
+
+                CurrentFolderAssets.Add(new AssetItemVM
+                {
+                    Editor = this,
+                    Name = fileName,
+                    FullPath = f,
+                    RelativePath = rel,
+                    IsDirectory = false,
+                    Kind = kind,
+                    Extension = ext,
+                    Icon = icon,
+                    DisplaySize = sizeStr
+                });
+            }
+        }
+        catch { }
+
+        OnPropertyChanged(nameof(CurrentAssetRelativePath));
+        OnPropertyChanged(nameof(CanNavigateUp));
     }
 
     [RelayCommand] public void OpenProjectFolder() { if (IsLoaded) TryOpenFolder(_folder); }
@@ -1346,7 +1766,7 @@ public sealed partial class EditorViewModel : ObservableObject, IDisposable
             "scale" or "r" => GizmoMode.Scale,
             _ => GizmoMode.Translate
         };
-        Say($"Режим трансформации: {CurrentGizmoMode}");
+        StatusText = $"Режим: {GizmoModeTitle}";
     }
 
     [RelayCommand] public void FocusOnSelected()

@@ -1,13 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Styles.Resources>
-    <SolidColorBrush x:Key="BgBrush" Color="#FFF4F3"/>
-    <SolidColorBrush x:Key="AccentBrush" Color="#F7CDD5"/>
-    <SolidColorBrush x:Key="TextBrush" Color="#482C30"/>
-    <SolidColorBrush x:Key="Text2Brush" Color="#98777B"/>
-    <SolidColorBrush x:Key="PrimaryBrush" Color="#4A2929"/>
-    <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="BorderBrush2" Color="#F1D9DB"/>
     <StreamGeometry x:Key="IconHome">M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z</StreamGeometry>
     <StreamGeometry x:Key="IconFolder">M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z</StreamGeometry>
     <StreamGeometry x:Key="IconGrid">M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z</StreamGeometry>
@@ -34,7 +27,7 @@
 
         <StackPanel Spacing="10">
           <!-- Card Banner -->
-          <Border Height="92" CornerRadius="14" Background="{StaticResource AccentBrush}" ClipToBounds="True">
+          <Border Height="92" CornerRadius="14" Background="{DynamicResource AccentBrush}" ClipToBounds="True">
             <Panel>
               <!-- Center Big Kind Icon / Stamp -->
               <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Spacing="6" Opacity="0.55">
@@ -44,10 +37,10 @@
 
               <!-- Top Left: Kind Pill -->
               <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8"
-                      Background="White" CornerRadius="999" Padding="8,3" BoxShadow="0 2 6 0 #20000000">
+                      Background="{DynamicResource SurfaceBrush}" CornerRadius="999" Padding="8,3" BoxShadow="0 2 6 0 #20000000">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <TextBlock Text="{Binding KindIcon}" FontSize="11" VerticalAlignment="Center"/>
-                  <TextBlock Text="{Binding KindLabel}" FontSize="11" FontWeight="Bold" Foreground="#4A2929" VerticalAlignment="Center"/>
+                  <TextBlock Text="{Binding KindLabel}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
               </Border>
 
@@ -57,14 +50,14 @@
                 <Button Classes="icon" ToolTip.Tip="В избранное"
                         Command="{Binding $parent[ItemsControl].DataContext.ToggleFavoriteCommand}" CommandParameter="{Binding}">
                   <Panel>
-                    <Path Classes="ico" Data="{StaticResource IconHeart}" Fill="#98777B" Opacity=".4" IsVisible="{Binding !IsFavorite}"/>
+                    <Path Classes="ico" Data="{StaticResource IconHeart}" Fill="{DynamicResource Text2Brush}" Opacity=".45" IsVisible="{Binding !IsFavorite}"/>
                     <Path Classes="ico" Data="{StaticResource IconHeart}" Fill="#E05263" IsVisible="{Binding IsFavorite}"/>
                   </Panel>
                 </Button>
                 <!-- Quick Remove from list -->
                 <Button Classes="icon" ToolTip.Tip="Убрать из списка (файлы на диске останутся)"
                         Command="{Binding $parent[ItemsControl].DataContext.RemoveCommand}" CommandParameter="{Binding}">
-                  <TextBlock Text="✕" FontSize="12" FontWeight="Bold" Foreground="#98777B" Opacity="0.7"/>
+                  <TextBlock Text="✕" FontSize="12" FontWeight="Bold" Foreground="{DynamicResource Text2Brush}"/>
                 </Button>
               </StackPanel>
             </Panel>
@@ -73,7 +66,7 @@
           <!-- Title and Info -->
           <StackPanel Spacing="4">
             <DockPanel>
-              <TextBlock Text="{Binding Name}" Classes="h2" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+              <TextBlock Text="{Binding Name}" Classes="h2" FontWeight="Bold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding Name}"/>
             </DockPanel>
 
             <TextBlock Text="{Binding ShortFolder}" Classes="muted" FontSize="11" TextTrimming="CharacterEllipsis"
@@ -81,24 +74,24 @@
 
             <!-- Metadata badges -->
             <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
-              <Border Background="#FFF0F3" CornerRadius="6" Padding="6,2">
-                <TextBlock Text="{Binding EngineVersion, StringFormat='⚡ v{0}', FallbackValue='⚡ v0.1.0'}" FontSize="10" FontWeight="SemiBold" Foreground="#4A2929"/>
+              <Border Background="{DynamicResource Surface3Brush}" CornerRadius="6" Padding="6,2">
+                <TextBlock Text="{Binding EngineVersion, StringFormat='⚡ v{0}', FallbackValue='⚡ v0.1.0'}" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource AccentTextBrush}"/>
               </Border>
-              <Border Background="#F5F5F7" CornerRadius="6" Padding="6,2">
-                <TextBlock Text="{Binding DisplayDate, StringFormat='🕒 {0}'}" FontSize="10" Foreground="#888888"/>
+              <Border Background="{DynamicResource Surface2Brush}" CornerRadius="6" Padding="6,2">
+                <TextBlock Text="{Binding DisplayDate, StringFormat='🕒 {0}'}" FontSize="10" Foreground="{DynamicResource Text2Brush}"/>
               </Border>
             </StackPanel>
           </StackPanel>
 
           <!-- Missing Folder Alert and Quick Remove -->
           <StackPanel IsVisible="{Binding HasProblem}" Spacing="6" Margin="0,2,0,0">
-            <Border Background="#FDECEF" BorderBrush="#F1A5B5" BorderThickness="1" CornerRadius="10" Padding="10,6">
+            <Border Background="{DynamicResource DangerSoftBrush}" CornerRadius="10" Padding="10,6">
               <DockPanel>
                 <TextBlock DockPanel.Dock="Left" Text="⚠️" FontSize="13" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <TextBlock Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="#C0392B" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding StatusText}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource DangerBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
               </DockPanel>
             </Border>
-            <Button Classes="soft" Background="#FDECEF" Foreground="#C0392B"
+            <Button Classes="danger"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                     Content="🗑️ Убрать из списка"
                     Command="{Binding $parent[ItemsControl].DataContext.RemoveMissingCommand}" CommandParameter="{Binding}"/>
@@ -125,7 +118,7 @@
               <Button Grid.Column="2" Classes="soft" Padding="4,6" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                       ToolTip.Tip="Удалить проект с диска"
                       Command="{Binding $parent[ItemsControl].DataContext.DeleteCommand}" CommandParameter="{Binding}">
-                <TextBlock Text="🗑️ Удалить" FontSize="11" Foreground="#C0392B"/>
+                <TextBlock Text="🗑️ Удалить" FontSize="11" Foreground="{DynamicResource DangerBrush}"/>
               </Button>
             </Grid>
           </StackPanel>
@@ -134,10 +127,14 @@
     </DataTemplate>
   </Styles.Resources>
 
-  <Style Selector="Window"><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/></Style>
-  <Style Selector="TextBlock.h1"><Setter Property="FontSize" Value="30"/><Setter Property="FontWeight" Value="ExtraBold"/></Style>
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource BgBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+  </Style>
+  <Style Selector="TextBlock.h1"><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="ExtraBold"/></Style>
   <Style Selector="TextBlock.h2"><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
   <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}"/></Style>
+  <Style Selector="TextBlock.danger"><Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/></Style>
 
   <Style Selector="Border.card">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
@@ -145,18 +142,52 @@
     <Setter Property="BorderThickness" Value="1"/>
     <Setter Property="CornerRadius" Value="20"/>
     <Setter Property="Padding" Value="16"/>
-    <Setter Property="BoxShadow" Value="0 6 18 0 #14482C30"/>
+    <Setter Property="BoxShadow" Value="0 6 18 0 #18000000"/>
   </Style>
+  <Style Selector="Border.hero">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+  </Style>
+  <Style Selector="Border.pill">
+    <Setter Property="Background" Value="{DynamicResource Surface3Brush}"/>
+    <Setter Property="CornerRadius" Value="999"/>
+    <Setter Property="Padding" Value="10,3"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="Border.pill > TextBlock">
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="Bold"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
+  </Style>
+  <Style Selector="Border.kbd">
+    <Setter Property="Background" Value="{DynamicResource Surface2Brush}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}"/>
+    <Setter Property="BorderThickness" Value="1,1,1,2"/>
+    <Setter Property="CornerRadius" Value="5"/>
+    <Setter Property="Padding" Value="6,1"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="Border.kbd > TextBlock">
+    <Setter Property="FontSize" Value="11"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+    <Setter Property="FontFamily" Value="Menlo,Consolas,monospace"/>
+  </Style>
+
+  <Style Selector="Button"><Setter Property="Cursor" Value="Hand"/></Style>
+  <Style Selector="Button:disabled"><Setter Property="Opacity" Value="0.45"/></Style>
 
   <Style Selector="Button.primary">
     <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
     <Setter Property="CornerRadius" Value="14"/>
     <Setter Property="Padding" Value="18,10"/>
     <Setter Property="FontWeight" Value="SemiBold"/>
   </Style>
   <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="#6B3D3D"/><Setter Property="Foreground" Value="White"/>
+    <Setter Property="Background" Value="{DynamicResource PrimaryHoverBrush}"/><Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PrimaryPressedBrush}"/><Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
   </Style>
   <Style Selector="Button.soft">
     <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
@@ -166,7 +197,20 @@
     <Setter Property="FontWeight" Value="SemiBold"/>
   </Style>
   <Style Selector="Button.soft:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="#F3B9C5"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+  </Style>
+  <Style Selector="Button.soft.light">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
+  </Style>
+  <Style Selector="Button.danger">
+    <Setter Property="Background" Value="{DynamicResource DangerSoftBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+    <Setter Property="CornerRadius" Value="14"/>
+    <Setter Property="Padding" Value="16,10"/>
+    <Setter Property="FontWeight" Value="SemiBold"/>
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DangerBrush}"/><Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
   </Style>
   <Style Selector="Button.tab">
     <Setter Property="Background" Value="Transparent"/>
@@ -180,10 +224,14 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
   </Style>
   <Style Selector="Button.tab:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="#FBE3E8"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}"/><Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
   </Style>
   <Style Selector="Button.icon">
     <Setter Property="Background" Value="Transparent"/><Setter Property="Padding" Value="6"/><Setter Property="CornerRadius" Value="10"/>
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+  </Style>
+  <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}"/>
   </Style>
   <Style Selector="Path.ico">
     <Setter Property="Width" Value="16"/><Setter Property="Height" Value="16"/><Setter Property="Stretch" Value="Uniform"/>
@@ -191,7 +239,11 @@
   </Style>
   <Style Selector="TextBox">
     <Setter Property="CornerRadius" Value="12"/><Setter Property="Padding" Value="12,9"/>
-    <Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="{DynamicResource BorderBrush2}"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
   </Style>
   <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="12"/></Style>
+  <Style Selector="RadioButton.seg">
+    <Setter Property="Margin" Value="0,0,12,6"/>
+  </Style>
+  <Style Selector="ListBox"><Setter Property="Background" Value="Transparent"/></Style>
 </Styles>

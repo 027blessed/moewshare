@@ -4,20 +4,19 @@
         Title="✨ Создать объект на сцене"
         Icon="/Assets/icon.ico"
         Width="780" Height="550" MinWidth="680" MinHeight="460"
-        WindowStartupLocation="CenterOwner"
-        Background="#FFF4F3">
+        WindowStartupLocation="CenterOwner">
 
   <DockPanel Margin="18">
     <!-- Header -->
     <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,14">
       <DockPanel>
-        <Border DockPanel.Dock="Right" Background="#FCE8EC" CornerRadius="8" Padding="8,4" VerticalAlignment="Center">
-          <TextBlock x:Name="ItemsCountText" Text="14 доступных объектов" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+        <Border DockPanel.Dock="Right" Classes="chip" Padding="8,4" Margin="10,0,0,0">
+          <TextBlock x:Name="ItemsCountText" Text="14 доступных объектов"/>
         </Border>
         <StackPanel Spacing="2">
-          <TextBlock Text="✨ Добавить объект на сцену" FontSize="18" FontWeight="ExtraBold" Foreground="#4A2929"/>
+          <TextBlock Text="✨ Добавить объект на сцену" Classes="title"/>
           <TextBlock Text="Выберите нужный примитив, 2D-спрайт, элемент интерфейса или шаблон персонажа."
-                     FontSize="12" Opacity="0.7"/>
+                     Classes="caption" FontSize="12"/>
         </StackPanel>
       </DockPanel>
 
@@ -39,7 +38,7 @@
     </StackPanel>
 
     <!-- Bottom Action Bar -->
-    <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#F1D9DB" BorderThickness="1"
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1"
             CornerRadius="12" Padding="14,10" Margin="0,12,0,0">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
@@ -48,14 +47,13 @@
         </StackPanel>
 
         <StackPanel VerticalAlignment="Center">
-          <CheckBox x:Name="MakeChildCheckBox" Content="🔗 Сделать дочерним объектом для выбранного"
-                    FontSize="12" Foreground="#4A2929"/>
+          <CheckBox x:Name="MakeChildCheckBox" Content="🔗 Сделать дочерним для выбранного объекта" FontSize="12"/>
         </StackPanel>
       </DockPanel>
     </Border>
 
     <!-- Cards Grid -->
-    <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="12" Padding="8">
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" CornerRadius="12" Padding="8">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <ItemsControl x:Name="TemplatesItemsControl">
           <ItemsControl.ItemsPanel>
@@ -66,27 +64,25 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Border Width="228" Height="114" Margin="5" Padding="10" CornerRadius="10"
-                      Background="{Binding CardBackground}"
-                      BorderBrush="{Binding CardBorderBrush}"
-                      BorderThickness="{Binding CardBorderThickness}"
+                      Classes="tplcard" Classes.selected="{Binding IsSelected}"
                       PointerPressed="OnCardPointerPressed"
                       DoubleTapped="OnCardDoubleTapped"
                       Cursor="Hand">
                 <DockPanel>
                   <!-- Top: Icon & Category Tag -->
                   <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
-                    <Border DockPanel.Dock="Right" Background="{Binding TagColor}" CornerRadius="6" Padding="6,2">
-                      <TextBlock Text="{Binding Category}" FontSize="9.5" FontWeight="Bold" Foreground="{Binding TagForeground}"/>
+                    <Border DockPanel.Dock="Right" Classes="chip" MaxWidth="150">
+                      <TextBlock Text="{Binding Category}" FontSize="9.5" TextTrimming="CharacterEllipsis"/>
                     </Border>
                     <TextBlock Text="{Binding Icon}" FontSize="24" VerticalAlignment="Center"/>
                   </DockPanel>
 
                   <!-- Bottom: Description -->
-                  <TextBlock Text="{Binding Description}" FontSize="10.5" Opacity="0.65" TextWrapping="Wrap"
+                  <TextBlock Text="{Binding Description}" Classes="caption" FontSize="10.5"
                              MaxLines="2" TextTrimming="CharacterEllipsis" DockPanel.Dock="Bottom"/>
 
                   <!-- Middle: Title -->
-                  <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" Foreground="#4A2929"
+                  <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Bold" TextTrimming="CharacterEllipsis"
                              VerticalAlignment="Center"/>
                 </DockPanel>
               </Border>

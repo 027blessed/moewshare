@@ -64,6 +64,43 @@
         if (o.type === 'sprite' || o.billboard) {
           m.billboardMode = B.Mesh.BILLBOARDMODE_ALL;
         }
+      } else if (o.type === 'model') {
+        if (o.modelPath) {
+          try {
+            const fullPath = o.modelPath;
+            const lastSlash = fullPath.lastIndexOf('/');
+            const rootUrl = lastSlash >= 0 ? fullPath.substring(0, lastSlash + 1) : '';
+            const fileName = lastSlash >= 0 ? fullPath.substring(lastSlash + 1) : fullPath;
+            const ext = fileName.substring(fileName.lastIndexOf('.')).toLowerCase();
+
+            if (['.obj', '.stl', '.gltf', '.glb'].includes(ext)) {
+              if (!window.BABYLON.SceneLoader || !window.BABYLON.SceneLoader.IsPluginForExtensionAvailable(ext)) {
+                try {
+                  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/babylonjs-loaders/7.54.3/babylonjs.loaders.min.js');
+                } catch (loadErr) {
+                  console.warn('Не удалось загрузить babylonjs-loaders: ' + loadErr.message);
+                }
+              }
+            }
+
+            if (window.BABYLON.SceneLoader) {
+              const res = await B.SceneLoader.ImportMeshAsync("", rootUrl, fileName, sc);
+              if (res.meshes && res.meshes.length > 0) {
+                m = res.meshes[0];
+                m.name = o.name;
+              } else {
+                m = B.MeshBuilder.CreateBox(o.name, { size: 1 }, sc);
+              }
+            } else {
+              m = B.MeshBuilder.CreateBox(o.name, { size: 1 }, sc);
+            }
+          } catch (modelErr) {
+            console.warn("Ошибка загрузки 3D модели " + o.modelPath, modelErr);
+            m = B.MeshBuilder.CreateBox(o.name, { size: 1 }, sc);
+          }
+        } else {
+          m = B.MeshBuilder.CreateBox(o.name, { size: 1 }, sc);
+        }
       } else {
         m = B.MeshBuilder.CreateBox(o.name, { size: 1 }, sc);
       }

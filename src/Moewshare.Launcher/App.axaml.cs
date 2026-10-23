@@ -41,6 +41,8 @@ public partial class App : Application
         AppDomain.CurrentDomain.UnhandledException += (_, e) => log.Error("Необработанное исключение", e.ExceptionObject as Exception);
         TaskScheduler.UnobservedTaskException += (_, e) => log.Error("Необработанное исключение в задаче", e.Exception);
 
+        ThemeService.LoadAndApply();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var vm = services.GetRequiredService<MainViewModel>();

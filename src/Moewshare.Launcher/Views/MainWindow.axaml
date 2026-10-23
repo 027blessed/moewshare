@@ -1,30 +1,30 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Moewshare.Launcher.Views.MainWindow"
-        Title="Moewshare" Width="1200" Height="780" MinWidth="1000" MinHeight="680"
+        Title="Moewshare" Width="1200" Height="780" MinWidth="900" MinHeight="600"
         Icon="/Assets/icon.ico"
-        Background="{DynamicResource BgBrush}" WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen">
   <DockPanel>
-    <Border DockPanel.Dock="Top" Background="White" BorderBrush="{DynamicResource BorderBrush2}"
+    <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}"
             BorderThickness="0,0,0,1" Padding="20,10">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
           <Border Width="34" Height="34" CornerRadius="12" Background="{DynamicResource AccentBrush}">
-            <Path Data="{StaticResource IconHeart}" Fill="#4A2929" Width="16" Height="16" Stretch="Uniform"/>
+            <Path Data="{StaticResource IconHeart}" Fill="{DynamicResource AccentTextBrush}" Width="16" Height="16" Stretch="Uniform"/>
           </Border>
           <TextBlock Text="Moewshare" FontSize="19" FontWeight="ExtraBold" VerticalAlignment="Center"/>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Home}" Command="{Binding GoHomeCommand}">
+          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Home}" Command="{Binding GoHomeCommand}" x:Name="TabHome">
             <StackPanel Orientation="Horizontal" Spacing="8"><Path Classes="ico" Data="{StaticResource IconHome}"/><TextBlock Text="Главная"/></StackPanel>
           </Button>
-          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Projects}" Command="{Binding GoProjectsCommand}">
+          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Projects}" Command="{Binding GoProjectsCommand}" x:Name="TabProjects">
             <StackPanel Orientation="Horizontal" Spacing="8"><Path Classes="ico" Data="{StaticResource IconFolder}"/><TextBlock Text="Мои проекты"/></StackPanel>
           </Button>
-          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Templates}" Command="{Binding GoTemplatesCommand}">
+          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Templates}" Command="{Binding GoTemplatesCommand}" x:Name="TabTemplates">
             <StackPanel Orientation="Horizontal" Spacing="8"><Path Classes="ico" Data="{StaticResource IconGrid}"/><TextBlock Text="Шаблоны"/></StackPanel>
           </Button>
-          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Library}" Command="{Binding GoLibraryCommand}">
+          <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Library}" Command="{Binding GoLibraryCommand}" x:Name="TabLibrary">
             <StackPanel Orientation="Horizontal" Spacing="8"><Path Classes="ico" Data="{StaticResource IconBook}"/><TextBlock Text="Библиотека"/></StackPanel>
           </Button>
         </StackPanel>
@@ -32,8 +32,9 @@
           <Border IsVisible="{Binding UpdateAvailable}" Background="{DynamicResource AccentBrush}" CornerRadius="999" Padding="12,5">
             <TextBlock Text="{Binding UpdateText}" FontSize="12" FontWeight="SemiBold"/>
           </Border>
+          <Button Classes="icon" x:Name="ThemeButton" Click="OnToggleThemeClick" Content="🌙" FontSize="15" Padding="8,6"/>
           <Button Classes="tab" Classes.active="{Binding ActiveTab, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Settings}"
-                  Command="{Binding GoSettingsCommand}" ToolTip.Tip="Настройки">
+                  Command="{Binding GoSettingsCommand}" x:Name="TabSettings">
             <Path Classes="ico" Data="{StaticResource IconSliders}"/>
           </Button>
         </StackPanel>

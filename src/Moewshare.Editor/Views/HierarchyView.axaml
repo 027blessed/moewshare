@@ -6,47 +6,38 @@
   <DockPanel Margin="8">
     <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
       <DockPanel>
-        <Border DockPanel.Dock="Right" Background="#FCE8EC" CornerRadius="8" Padding="6,2" VerticalAlignment="Center">
-          <TextBlock Text="{Binding Editor.Objects.Count, StringFormat='{}{0} шт.'}" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+        <Border DockPanel.Dock="Right" Classes="chip">
+          <TextBlock Text="{Binding Editor.Objects.Count, StringFormat='{}{0} шт.'}"/>
         </Border>
         <TextBlock Text="Иерархия сцены" Classes="h" VerticalAlignment="Center"/>
       </DockPanel>
 
-      <Button Classes="primary" Content="✨ + Добавить объект..." Command="{Binding Editor.OpenAddObjectDialogCommand}"
-              HorizontalAlignment="Stretch" ToolTip.Tip="Открыть окно создания и добавления объектов на сцену"/>
+      <Button Classes="primary" Content="✨ Добавить объект…" Command="{Binding Editor.OpenAddObjectDialogCommand}"
+              HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" ToolTip.Tip="{Binding Editor.TipAddObject}"/>
     </StackPanel>
 
     <!-- Bottom Actions: Duplicate, Delete, Unparent -->
-    <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,16">
+    <StackPanel DockPanel.Dock="Bottom" Spacing="6" Margin="0,8,0,4">
       <WrapPanel Orientation="Horizontal">
-        <Button Classes="soft" Content="Дублировать" Command="{Binding Editor.DuplicateSelectedCommand}" IsEnabled="{Binding Editor.HasSelection}" Margin="0,0,4,4"/>
-        <Button Classes="soft" Content="Удалить" Command="{Binding Editor.DeleteSelectedCommand}" IsEnabled="{Binding Editor.HasSelection}" Margin="0,0,4,4"/>
-        <Button Classes="primary" Content="🧩 + Компонент" Command="{Binding Editor.OpenAddComponentCommand}" IsEnabled="{Binding Editor.HasSelection}" Margin="0,0,4,4"
+        <Button Classes="soft" Content="⧉ Дублировать" Command="{Binding Editor.DuplicateSelectedCommand}" IsEnabled="{Binding Editor.HasSelection}" Margin="0,0,4,4"
+                ToolTip.Tip="{Binding Editor.TipDuplicate}"/>
+        <Button Classes="danger" Content="🗑 Удалить" Command="{Binding Editor.DeleteSelectedCommand}" IsEnabled="{Binding Editor.HasSelection}" Margin="0,0,4,4"
+                ToolTip.Tip="{Binding Editor.TipDelete}"/>
+        <Button Classes="soft" Content="🧩 Компонент" Command="{Binding Editor.OpenAddComponentCommand}" IsEnabled="{Binding Editor.HasSelection}" Margin="0,0,4,4"
                 ToolTip.Tip="Добавить компонент на выбранный объект (физика, платформер, коллизии, спрайты)"/>
         <Button Classes="soft" Content="✖ Отвязать" Command="{Binding Editor.UnparentSelectedCommand}" IsEnabled="{Binding Editor.Selected.HasParent}" Margin="0,0,4,4"
                 ToolTip.Tip="Отвязать выбранный объект от родителя (вернуть в корень сцены)"/>
       </WrapPanel>
-      <TextBlock Text="💡 Перетаскивайте мышкой объекты друг на друга, чтобы привязать (сделать дочерними)!"
-                 FontSize="10.5" Opacity="0.6" TextWrapping="Wrap"/>
+      <TextBlock Classes="caption" Text="💡 Перетащите объект на другой — он станет дочерним. Ctrl/⌘ или Shift + клик — несколько объектов."/>
     </StackPanel>
 
     <!-- Objects List with Visual Parenting Tree Indent -->
-    <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="10">
-      <ListBox x:Name="ObjectsListBox" ItemsSource="{Binding Editor.DisplayedHierarchyObjects}" SelectedItem="{Binding Editor.Selected}"
-               Background="Transparent" SelectionMode="Single">
-        <ListBox.Styles>
-          <Style Selector="ListBoxItem">
-            <Setter Property="Padding" Value="1"/>
-            <Setter Property="Margin" Value="2,1"/>
-            <Setter Property="CornerRadius" Value="6"/>
-          </Style>
-        </ListBox.Styles>
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" CornerRadius="10" ClipToBounds="True">
+      <ListBox x:Name="ObjectsListBox" Classes="plain" ItemsSource="{Binding Editor.DisplayedHierarchyObjects}" SelectedItem="{Binding Editor.Selected}"
+               SelectionMode="Single">
         <ListBox.ItemTemplate>
           <DataTemplate DataType="vm:ObjectVM">
-            <Border Background="{Binding IsSelectedBrush}"
-                    BorderBrush="{Binding DropTargetBrush}"
-                    BorderThickness="{Binding DropTargetBorderThickness}"
-                    CornerRadius="6"
+            <Border Classes="row" Classes.selected="{Binding IsSelected}" Classes.drop="{Binding IsDropTarget}"
                     Padding="4,3"
                     Margin="{Binding HierarchyIndent}">
               <Border.ContextFlyout>
@@ -79,13 +70,13 @@
                           Width="22" Height="22" Padding="0" FontSize="11" Margin="0,0,3,0"/>
 
                   <!-- Type badge -->
-                  <Border Background="#F7E8EB" CornerRadius="4" Padding="4,1">
-                    <TextBlock Text="{Binding Type}" Opacity="0.75" FontSize="9.5" FontWeight="SemiBold" Foreground="#4A2929"/>
+                  <Border Classes="chip" Padding="4,1">
+                    <TextBlock Text="{Binding Type}" FontSize="9.5"/>
                   </Border>
                 </StackPanel>
 
                 <!-- Left: Foldout arrow (▼/▶) + Spacer + Chain (└─ 🔗) + Type icon + Name -->
-                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" Opacity="{Binding VisibilityOpacity}">
+                <DockPanel VerticalAlignment="Center" Opacity="{Binding VisibilityOpacity}">
                   <!-- Foldout arrow button -->
                   <Button Classes="tool" Content="{Binding ExpandIcon}"
                           IsVisible="{Binding HasChildren}"
@@ -97,15 +88,16 @@
                   <Border Width="16" Height="16" IsVisible="{Binding HasNoChildren}" Margin="0,0,2,0"/>
 
                   <!-- Chain branch indicator -->
-                  <TextBlock Text="{Binding ChainBranchIcon}" FontSize="11" FontWeight="Bold" Foreground="#FF4B72"
-                             VerticalAlignment="Center" IsVisible="{Binding HasParent}"/>
+                  <TextBlock Text="{Binding ChainBranchIcon}" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SelectionBrush}"
+                             VerticalAlignment="Center" IsVisible="{Binding HasParent}" Margin="0,0,2,0"/>
 
                   <!-- Type icon -->
-                  <TextBlock Text="{Binding HierarchyTypeIcon}" FontSize="12" VerticalAlignment="Center" Opacity="0.85"/>
+                  <TextBlock Text="{Binding HierarchyTypeIcon}" FontSize="12" VerticalAlignment="Center" Opacity="0.85" Margin="0,0,4,0"/>
 
                   <!-- Name -->
-                  <TextBlock Text="{Binding Name}" FontWeight="{Binding NameFontWeight}" FontSize="12" VerticalAlignment="Center"/>
-                </StackPanel>
+                  <TextBlock Text="{Binding Name}" FontWeight="{Binding NameFontWeight}" FontSize="12" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/>
+                </DockPanel>
               </DockPanel>
             </Border>
           </DataTemplate>

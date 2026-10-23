@@ -239,6 +239,7 @@ public sealed partial class ObjectVM(SceneObject model, Action changed) : Observ
         ObjectTypes.Sphere => "🔮 ",
         ObjectTypes.Cylinder => "🥫 ",
         ObjectTypes.Plane => "🟩 ",
+        ObjectTypes.Model => "🧊 [3D] ",
         _ => "📦 "
     };
 
@@ -252,6 +253,22 @@ public sealed partial class ObjectVM(SceneObject model, Action changed) : Observ
     public bool IsUiImage => Type == ObjectTypes.UiImage;
     public bool IsUiButton => Type == ObjectTypes.UiButton;
     public bool IsWorldObject => !IsUiElement;
+    public bool IsModel => Type == ObjectTypes.Model;
+
+    public string? ModelPath
+    {
+        get => Model.ModelPath;
+        set
+        {
+            if (Model.ModelPath != value)
+            {
+                Model.ModelPath = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+                Touch();
+                OnPropertyChanged(nameof(ModelName));
+            }
+        }
+    }
+    public string ModelName => string.IsNullOrEmpty(ModelPath) ? "(модель не выбрана)" : System.IO.Path.GetFileName(ModelPath);
 
     // === Component System ===
     public bool HasComponent(string type)

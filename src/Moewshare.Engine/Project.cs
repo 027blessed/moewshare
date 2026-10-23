@@ -149,7 +149,7 @@ public sealed class LocalGameServer : IDisposable
     {
         ".html" => "text/html; charset=utf-8", ".js" => "text/javascript; charset=utf-8", ".json" => "application/json",
         ".css" => "text/css", ".png" => "image/png", ".jpg" or ".jpeg" => "image/jpeg", ".svg" => "image/svg+xml",
-        ".glb" => "model/gltf-binary", ".gltf" => "model/gltf+json", ".mp3" => "audio/mpeg", ".ogg" => "audio/ogg",
+        ".glb" => "model/gltf-binary", ".gltf" => "model/gltf+json", ".obj" => "model/obj", ".stl" => "model/stl", ".fbx" => "application/octet-stream", ".mp3" => "audio/mpeg", ".ogg" => "audio/ogg",
         ".wav" => "audio/wav", ".txt" => "text/plain; charset=utf-8", _ => "application/octet-stream"
     };
 

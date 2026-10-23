@@ -49,4 +49,17 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand] Task GoTemplates() => _nav.NavigateAsync<NewProjectViewModel>();
     [RelayCommand] Task GoLibrary() => _nav.NavigateAsync<LibraryViewModel>();
     [RelayCommand] Task GoSettings() => _nav.NavigateAsync<SettingsViewModel>();
+
+    /// <summary>Ctrl+O / ⌘O — добавить существующий проект.</summary>
+    public async Task AddExistingProjectAsync()
+    {
+        if (_nav.Current is not ProjectsViewModel) await _nav.NavigateAsync<ProjectsViewModel>();
+        if (_nav.Current is ProjectsViewModel p) await p.AddExistingCommand.ExecuteAsync(null);
+    }
+
+    /// <summary>F5 / Ctrl+R / ⌘R — обновить текущую страницу.</summary>
+    public async Task RefreshAsync()
+    {
+        if (_nav.Current is IPage page) await page.InitializeAsync();
+    }
 }

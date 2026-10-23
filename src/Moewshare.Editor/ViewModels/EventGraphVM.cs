@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Moewshare.Engine;
@@ -24,6 +25,13 @@ public sealed partial class EventGraphVM : ObservableObject
 
     partial void OnSelectedNodeChanged(EventNode? value)
     {
+        if (!_syncingSelection)
+        {
+            _selection.Clear();
+            if (value is not null) _selection.Add(value);
+            SelectedGroup = null;
+            RaiseSelectionChanged();
+        }
         OnPropertyChanged(nameof(HasSelectedNode));
         OnPropertyChanged(nameof(IsUiSetTextSelected));
         OnPropertyChanged(nameof(IsButtonEventSelected));
@@ -136,7 +144,7 @@ public sealed partial class EventGraphVM : ObservableObject
                 SelectedNode.Properties["TargetName"] = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SelectedNodePreviewText));
-                Editor.IsDirty = true;
+                Editor.MarkDirty();
                 NotifyGraphChanged();
             }
         }
@@ -152,7 +160,7 @@ public sealed partial class EventGraphVM : ObservableObject
                 SelectedNode.Properties["Prefix"] = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SelectedNodePreviewText));
-                Editor.IsDirty = true;
+                Editor.MarkDirty();
                 NotifyGraphChanged();
             }
         }
@@ -168,7 +176,7 @@ public sealed partial class EventGraphVM : ObservableObject
                 SelectedNode.Properties["Suffix"] = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(SelectedNodePreviewText));
-                Editor.IsDirty = true;
+                Editor.MarkDirty();
                 NotifyGraphChanged();
             }
         }
@@ -185,7 +193,7 @@ public sealed partial class EventGraphVM : ObservableObject
             {
                 SelectedNode.Properties["ButtonName"] = value;
                 OnPropertyChanged();
-                Editor.IsDirty = true;
+                Editor.MarkDirty();
                 NotifyGraphChanged();
             }
         }
@@ -200,7 +208,7 @@ public sealed partial class EventGraphVM : ObservableObject
             {
                 SelectedNode.Properties["ObjectName"] = value;
                 OnPropertyChanged();
-                Editor.IsDirty = true;
+                Editor.MarkDirty();
                 NotifyGraphChanged();
             }
         }
@@ -217,7 +225,7 @@ public sealed partial class EventGraphVM : ObservableObject
                 if (SelectedNode.NodeType == "var_get") SelectedNode.Title = $"🔢 Get {value}";
                 else if (SelectedNode.NodeType == "var_set") SelectedNode.Title = $"✏️ Set {value}";
                 OnPropertyChanged();
-                Editor.IsDirty = true;
+                Editor.MarkDirty();
                 NotifyGraphChanged();
             }
         }
@@ -282,8 +290,34 @@ public sealed partial class EventGraphVM : ObservableObject
     public EventGraphVM(EditorViewModel editor)
     {
         Editor = editor;
+        Editor.SceneRestored += OnSceneRestored;
         RefreshVariables();
         FilterLibrary();
+    }
+
+    /// <summary>После Undo/Redo или открытия другой сцены — перепривязываемся к новым объектам.</summary>
+    void OnSceneRestored()
+    {
+        var targetId = TargetObject?.Id;
+        var selectedIds = _selection.Select(n => n.Id).ToList();
+        if (IsObjectGraph)
+        {
+            var obj = targetId is null ? null : Editor.Objects.FirstOrDefault(o => o.Id == targetId);
+            if (obj is null) { IsObjectGraph = false; TargetObject = null; }
+            else TargetObject = obj;
+        }
+        _syncingSelection = true;
+        _selection.Clear();
+        foreach (var id in selectedIds)
+            if (CurrentGraph.FindNode(id) is { } n) _selection.Add(n);
+        SelectedNode = _selection.LastOrDefault();
+        _syncingSelection = false;
+        SelectedGroup = null;
+        RefreshVariables();
+        OnPropertyChanged(nameof(CurrentTargetTitle));
+        OnPropertyChanged(nameof(CurrentGraph));
+        RaiseSelectionChanged();
+        NotifyGraphChanged();
     }
 
     public void RefreshVariables()
@@ -333,7 +367,7 @@ public sealed partial class EventGraphVM : ObservableObject
 
     private void OnVariablePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -393,7 +427,7 @@ public sealed partial class EventGraphVM : ObservableObject
         CurrentGraph.Variables.Add(newVar);
         Variables.Add(newVar);
         SelectedVariable = newVar;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -406,7 +440,7 @@ public sealed partial class EventGraphVM : ObservableObject
         CurrentGraph.Variables.Remove(v);
         Variables.Remove(v);
         if (SelectedVariable == v) SelectedVariable = null;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -419,11 +453,10 @@ public sealed partial class EventGraphVM : ObservableObject
         var node = EventNodeLibrary.CreateNode("var_get");
         node.Title = $"🔢 Get {v.Name}";
         node.Properties["VariableName"] = v.Name;
-        node.PosX = 200;
-        node.PosY = 200;
+        (node.PosX, node.PosY) = NextSpawnPosition();
         CurrentGraph.AddNode(node);
         SelectedNode = node;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -436,11 +469,10 @@ public sealed partial class EventGraphVM : ObservableObject
         var node = EventNodeLibrary.CreateNode("var_set");
         node.Title = $"✏️ Set {v.Name}";
         node.Properties["VariableName"] = v.Name;
-        node.PosX = 250;
-        node.PosY = 250;
+        (node.PosX, node.PosY) = NextSpawnPosition();
         CurrentGraph.AddNode(node);
         SelectedNode = node;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -448,8 +480,7 @@ public sealed partial class EventGraphVM : ObservableObject
     public void AddNode(NodeDescriptor desc)
     {
         var node = desc.Factory();
-        node.PosX = 220;
-        node.PosY = 220;
+        (node.PosX, node.PosY) = NextSpawnPosition();
         if (IsObjectGraph && TargetObject != null)
         {
             if (node.NodeType == "event_ui_button_clicked")
@@ -467,7 +498,7 @@ public sealed partial class EventGraphVM : ObservableObject
         SelectedNode = node;
         LeftSidebarTabIndex = 0;
         IsPaletteOpen = false;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -492,27 +523,23 @@ public sealed partial class EventGraphVM : ObservableObject
         CurrentGraph.AddNode(node);
         SelectedNode = node;
         LeftSidebarTabIndex = 0;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
+    /// <summary>Удаляет все выделенные блоки (Delete / ⌫).</summary>
     [RelayCommand]
-    public void DeleteSelectedNode()
-    {
-        if (SelectedNode is null) return;
-        CurrentGraph.RemoveNode(SelectedNode.Id);
-        SelectedNode = null;
-        Editor.IsDirty = true;
-        NotifyGraphChanged();
-    }
+    public void DeleteSelectedNode() => DeleteSelectedNodes();
 
     [RelayCommand]
     public void ClearGraph()
     {
         CurrentGraph.Nodes.Clear();
         CurrentGraph.Connections.Clear();
+        CurrentGraph.Groups.Clear();
+        SelectedGroup = null;
         SelectedNode = null;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
     }
 
@@ -522,7 +549,7 @@ public sealed partial class EventGraphVM : ObservableObject
         Editor.CurrentScene.EventGraph = EventGraph.CreateClickerPreset();
         RefreshVariables();
         SelectedNode = null;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
         Editor.Say("Загружен шаблон логики: Кликер (Тапалка + Автоклик)", ConsoleLevel.Info);
     }
@@ -533,7 +560,7 @@ public sealed partial class EventGraphVM : ObservableObject
         Editor.CurrentScene.EventGraph = EventGraph.CreateCoinCollectorPreset();
         RefreshVariables();
         SelectedNode = null;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
         Editor.Say("Загружен шаблон логики: Сбор монет (10 монет + UI)", ConsoleLevel.Info);
     }
@@ -544,7 +571,7 @@ public sealed partial class EventGraphVM : ObservableObject
         Editor.CurrentScene.EventGraph = EventGraph.CreateDoorKeyPreset();
         RefreshVariables();
         SelectedNode = null;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
         Editor.Say("Загружен шаблон логики: Дверь и ключ", ConsoleLevel.Info);
     }
@@ -555,7 +582,7 @@ public sealed partial class EventGraphVM : ObservableObject
         Editor.CurrentScene.EventGraph = EventGraph.CreatePlayerHealthPreset();
         RefreshVariables();
         SelectedNode = null;
-        Editor.IsDirty = true;
+        Editor.MarkDirty();
         NotifyGraphChanged();
         Editor.Say("Загружен шаблон логики: Здоровье игрока", ConsoleLevel.Info);
     }

@@ -54,11 +54,17 @@ public sealed class DialogService : IDialogService
         var w = new Window
         {
             Title = title, Content = panel, SizeToContent = SizeToContent.WidthAndHeight, CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner, Background = Brush.Parse("#FFF4F3"),
-            Foreground = Brush.Parse("#482C30")
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
         };
         ok.Click += (_, _) => { result = tb?.Text ?? "ok"; w.Close(); };
         cancel.Click += (_, _) => w.Close();
+        // Enter — подтвердить, Esc — отмена
+        w.KeyDown += (_, e) =>
+        {
+            if (e.Key == Avalonia.Input.Key.Enter) { result = tb?.Text ?? "ok"; w.Close(); e.Handled = true; }
+            else if (e.Key == Avalonia.Input.Key.Escape) { w.Close(); e.Handled = true; }
+        };
+        w.Opened += (_, _) => { if (tb is not null) { tb.Focus(); tb.SelectAll(); } else ok.Focus(); };
         await w.ShowDialog(Owner);
         return result;
     }

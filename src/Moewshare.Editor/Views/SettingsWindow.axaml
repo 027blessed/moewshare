@@ -3,69 +3,99 @@
         x:Class="Moewshare.Editor.Views.SettingsWindow"
         Title="⚙️ Настройки движка Moewshare"
         Icon="/Assets/icon.ico"
-        Width="820" Height="580" MinWidth="740" MinHeight="500"
-        WindowStartupLocation="CenterOwner"
-        Background="#FFF4F3">
+        Width="860" Height="620" MinWidth="680" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
 
   <DockPanel Margin="18">
     <!-- Header -->
-    <Border DockPanel.Dock="Top" Background="White" BorderBrush="#F1D9DB" BorderThickness="1"
+    <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1"
             CornerRadius="14" Padding="16,12" Margin="0,0,0,14">
       <DockPanel>
-        <Border DockPanel.Dock="Right" Background="#FCE8EC" CornerRadius="10" Padding="10,6" VerticalAlignment="Center">
-          <TextBlock x:Name="McpHeaderBadge" Text="🤖 AI &amp; MCP готов к работе" FontSize="11" FontWeight="Bold" Foreground="#4A2929"/>
+        <Border DockPanel.Dock="Right" Classes="chip" Padding="10,5" Margin="10,0,0,0">
+          <TextBlock x:Name="McpHeaderBadge" Text="🤖 AI &amp; MCP готов к работе" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource TextBrush}"/>
         </Border>
         <StackPanel Spacing="3">
-          <TextBlock Text="⚙️ Настройки движка Moewshare" FontSize="18" FontWeight="ExtraBold" Foreground="#4A2929"/>
-          <TextBlock Text="Параметры редактора, рендера и подключение AI-ассистента через протокол MCP."
-                     FontSize="12" Opacity="0.7"/>
+          <TextBlock Text="⚙️ Настройки движка Moewshare" Classes="title"/>
+          <TextBlock Text="Оформление, параметры редактора, рендер и подключение AI-ассистента через протокол MCP."
+                     Classes="caption" FontSize="12"/>
         </StackPanel>
       </DockPanel>
     </Border>
 
     <!-- Bottom Buttons Bar -->
-    <Border DockPanel.Dock="Bottom" Background="White" BorderBrush="#F1D9DB" BorderThickness="1"
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1"
             CornerRadius="14" Padding="14,10" Margin="0,12,0,0">
       <DockPanel>
         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
           <Button Classes="soft" Content="Закрыть" Click="OnCloseClick"/>
           <Button Classes="primary" Content="💾 Сохранить настройки" Click="OnSaveClick"/>
         </StackPanel>
-        <TextBlock x:Name="StatusInfoText" Text="Настройки сохраняются автоматически"
-                   VerticalAlignment="Center" FontSize="11" Opacity="0.6"/>
+        <TextBlock x:Name="StatusInfoText" Text="Тема применяется сразу. Остальные параметры — по кнопке «Сохранить»."
+                   VerticalAlignment="Center" Classes="caption" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
       </DockPanel>
     </Border>
 
     <!-- Tabs Container -->
-    <Border Background="White" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="14" Padding="14">
-      <TabControl>
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" CornerRadius="14" Padding="14">
+      <TabControl x:Name="Tabs">
+        <!-- Вкладка: ВНЕШНИЙ ВИД -->
+        <TabItem Header="🎨 Внешний вид">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="14" Margin="6,10,6,6">
+              <Border Classes="sunken" Padding="14">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="Тема оформления" Classes="h"/>
+                  <TextBlock Classes="caption" FontSize="11"
+                             Text="Применяется сразу ко всему редактору и лаунчеру. «Как в системе» следует настройкам macOS / Windows."/>
+                  <WrapPanel>
+                    <RadioButton x:Name="ThemeSystem" GroupName="theme" Margin="0,0,10,8" Content="🖥  Как в системе" Click="OnThemeRadioChanged"/>
+                    <RadioButton x:Name="ThemeLight" GroupName="theme" Margin="0,0,10,8" Content="☀️  Светлая" Click="OnThemeRadioChanged"/>
+                    <RadioButton x:Name="ThemeDark" GroupName="theme" Margin="0,0,10,8" Content="🌙  Тёмная" Click="OnThemeRadioChanged"/>
+                  </WrapPanel>
+                  <TextBlock x:Name="ThemeHotkeyHint" Classes="caption" FontSize="11"/>
+                </StackPanel>
+              </Border>
+
+              <Border Classes="sunken" Padding="14">
+                <DockPanel>
+                  <Button DockPanel.Dock="Right" Classes="soft" Content="⌨️ Открыть справку" Click="OnHotkeysClick" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                  <StackPanel Spacing="4">
+                    <TextBlock Text="Горячие клавиши" Classes="h"/>
+                    <TextBlock x:Name="HotkeysInfo" Classes="caption" FontSize="11"/>
+                  </StackPanel>
+                </DockPanel>
+              </Border>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
         <!-- Вкладка: AI & MCP СЕРВЕР -->
         <TabItem Header="🤖 AI &amp; MCP Сервер">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="14" Margin="6,10,6,6">
 
               <!-- Status Banner -->
-              <Border Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <DockPanel>
                   <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button x:Name="BtnToggleServer" Classes="primary" Content="Перезапустить сервер" Click="OnRestartMcpClick"/>
                   </StackPanel>
                   <StackPanel Spacing="4">
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                      <TextBlock Text="Статус сервера:" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
-                      <Border x:Name="BadgeServerStatus" Background="#E8F8F5" CornerRadius="8" Padding="8,3">
-                        <TextBlock x:Name="TextServerStatus" Text="🟢 Активен (порт 45124)" FontSize="12" FontWeight="Bold" Foreground="#27AE60"/>
+                      <TextBlock Text="Статус сервера:" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
+                      <Border x:Name="BadgeServerStatus" Classes="banner-success" Padding="8,3">
+                        <TextBlock x:Name="TextServerStatus" Text="🟢 Активен (порт 45124)" FontSize="12" FontWeight="Bold" Classes="success"/>
                       </Border>
                     </StackPanel>
-                    <TextBlock x:Name="TextServerEndpoint" Text="Эндпоинт: http://127.0.0.1:45124/mcp" FontSize="11" FontFamily="Consolas, monospace" Opacity="0.7"/>
+                    <TextBlock x:Name="TextServerEndpoint" Text="Эндпоинт: http://127.0.0.1:45124/mcp" FontSize="11" FontFamily="Consolas, monospace" Classes="caption"/>
                   </StackPanel>
                 </DockPanel>
               </Border>
 
               <!-- Server Config Controls -->
-              <Border Background="#FAFAFA" BorderBrush="#EEEEEE" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <StackPanel Spacing="10">
-                  <TextBlock Text="Параметры MCP" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
+                  <TextBlock Text="Параметры MCP" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
 
                   <CheckBox x:Name="CheckMcpEnabled" Content="Включить встроенный MCP сервер (разрешить AI-ассистенту управлять движком)"
                             IsChecked="True" FontSize="12"/>
@@ -81,11 +111,11 @@
               </Border>
 
               <!-- Quick Integrations -->
-              <Border Background="#FAFAFA" BorderBrush="#EEEEEE" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <StackPanel Spacing="10">
-                  <TextBlock Text="Быстрая интеграция с AI" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
+                  <TextBlock Text="Быстрая интеграция с AI" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
                   <TextBlock Text="Подключите ассистента Antigravity, Claude Code или Cursor, чтобы он мог напрямую видеть сцену, создавать объекты и собирать графы логики."
-                             FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+                             Classes="caption" FontSize="11"/>
 
                   <WrapPanel Margin="0,4,0,0">
                     <Button Classes="primary" Content="⚡ Подключить к Antigravity (в 1 клик)" Click="OnConfigureAntigravityClick" Margin="0,0,8,6"/>
@@ -96,35 +126,35 @@
               </Border>
 
               <!-- Available Tools Preview -->
-              <Border Background="#FAFAFA" BorderBrush="#EEEEEE" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <StackPanel Spacing="8">
-                  <TextBlock Text="Доступные команды для ассистента (14 инструментов)" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
-                  <TextBlock Text="• moewshare_get_scene — просмотр всех объектов и координат" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_create_object — создание 3D объектов, UI кнопок, текста, спрайтов" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_update_object — изменение позиции, масштаба, цвета, текста" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_delete_object — удаление объектов со сцены" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_get_event_graph — получение схемы нод и связей" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_add_event_node — добавление нод логики (Click, Math, Branch, UI Text)" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_connect_nodes — соединение нод проводами" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_add_variable — создание переменных (Score, ClickPower...)" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_run_game / stop_game — запуск и остановка симуляции" FontSize="11" Opacity="0.8"/>
-                  <TextBlock Text="• moewshare_get_console_logs — чтение ошибок и логов консоли" FontSize="11" Opacity="0.8"/>
+                  <TextBlock Text="Доступные команды для ассистента (14 инструментов)" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
+                  <TextBlock Text="• moewshare_get_scene — просмотр всех объектов и координат" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_create_object — создание 3D объектов, UI кнопок, текста, спрайтов" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_update_object — изменение позиции, масштаба, цвета, текста" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_delete_object — удаление объектов со сцены" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_get_event_graph — получение схемы нод и связей" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_add_event_node — добавление нод логики (Click, Math, Branch, UI Text)" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_connect_nodes — соединение нод проводами" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_add_variable — создание переменных (Score, ClickPower...)" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_run_game / stop_game — запуск и остановка симуляции" Classes="caption" FontSize="11"/>
+                  <TextBlock Text="• moewshare_get_console_logs — чтение ошибок и логов консоли" Classes="caption" FontSize="11"/>
                 </StackPanel>
               </Border>
 
               <!-- Live Request Logs -->
-              <Border Background="#2C3E50" BorderBrush="#1A252F" BorderThickness="1" CornerRadius="12" Padding="12">
+              <Border Background="{DynamicResource CodeBgBrush}" CornerRadius="12" Padding="12">
                 <StackPanel Spacing="6">
                   <DockPanel>
                     <Button DockPanel.Dock="Right" Classes="soft" Content="Очистить лог" Click="OnClearMcpLogClick" Padding="6,2" FontSize="10"/>
-                    <TextBlock Text="📜 Лог запросов от AI (Live MCP Requests)" FontWeight="Bold" FontSize="12" Foreground="White"/>
+                    <TextBlock Text="📜 Лог запросов от AI (Live MCP Requests)" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource CodeTextBrush}"/>
                   </DockPanel>
-                  <Border Background="#1E272C" CornerRadius="8" Padding="8" Height="110">
+                  <Border Background="#20FFFFFF" CornerRadius="8" Padding="8" Height="130">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                       <ItemsControl x:Name="LogsItemsControl">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate>
-                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="11" Foreground="#A3E4D7" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding}" FontFamily="Consolas, monospace" FontSize="11" Foreground="{DynamicResource CodeTextBrush}" TextWrapping="Wrap"/>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
                       </ItemsControl>
@@ -142,20 +172,20 @@
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="14" Margin="6,10,6,6">
 
-              <Border Background="#FAFAFA" BorderBrush="#EEEEEE" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <StackPanel Spacing="10">
-                  <TextBlock Text="Автосохранение" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
+                  <TextBlock Text="Автосохранение" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
                   <Grid ColumnDefinitions="Auto,120,Auto">
                     <TextBlock Text="Интервал автосохранения (минут):" VerticalAlignment="Center" FontSize="12" Margin="0,0,10,0"/>
                     <TextBox x:Name="BoxAutoSave" Grid.Column="1" Text="5" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="(0 = выключено)" VerticalAlignment="Center" FontSize="11" Opacity="0.6" Margin="10,0,0,0"/>
+                    <TextBlock Grid.Column="2" Text="(0 = выключено)" VerticalAlignment="Center" Classes="caption" FontSize="11" Margin="10,0,0,0"/>
                   </Grid>
                 </StackPanel>
               </Border>
 
-              <Border Background="#FAFAFA" BorderBrush="#EEEEEE" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <StackPanel Spacing="10">
-                  <TextBlock Text="Сетка и привязка во вьюпорте" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
+                  <TextBlock Text="Сетка и привязка во вьюпорте" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
                   <CheckBox x:Name="CheckShowGrid" Content="Отображать координатную сетку на плоскости" IsChecked="True" FontSize="12"/>
                   <CheckBox x:Name="CheckSnapToGrid" Content="Привязка к сетке при перемещении объектов" IsChecked="True" FontSize="12"/>
                   <Grid ColumnDefinitions="Auto,120" Margin="0,4,0,0">
@@ -174,13 +204,13 @@
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="14" Margin="6,10,6,6">
 
-              <Border Background="#FAFAFA" BorderBrush="#EEEEEE" BorderThickness="1" CornerRadius="12" Padding="14">
+              <Border Classes="sunken" Padding="14">
                 <StackPanel Spacing="10">
-                  <TextBlock Text="Производительность вьюпорта" FontWeight="Bold" FontSize="13" Foreground="#4A2929"/>
+                  <TextBlock Text="Производительность вьюпорта" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextBrush}"/>
                   <Grid ColumnDefinitions="Auto,120,Auto">
                     <TextBlock Text="Лимит кадров в секунду (FPS):" VerticalAlignment="Center" FontSize="12" Margin="0,0,10,0"/>
                     <TextBox x:Name="BoxFpsLimit" Grid.Column="1" Text="60" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="кадров/сек" VerticalAlignment="Center" FontSize="11" Opacity="0.6" Margin="10,0,0,0"/>
+                    <TextBlock Grid.Column="2" Text="кадров/сек" VerticalAlignment="Center" Classes="caption" FontSize="11" Margin="10,0,0,0"/>
                   </Grid>
                   <CheckBox x:Name="CheckAntiAliasing" Content="Сглаживание линий и граней (Anti-Aliasing)" IsChecked="True" FontSize="12"/>
                 </StackPanel>

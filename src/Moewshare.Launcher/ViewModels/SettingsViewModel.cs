@@ -18,6 +18,26 @@ public sealed partial class SettingsViewModel(ISettingsService settings, IEditor
     [ObservableProperty] string _enginesFolder = "";
     [ObservableProperty] bool _autoCheckUpdates;
     [ObservableProperty] string? _info;
+    [ObservableProperty] int _themeIndex;   // 0 — как в системе, 1 — светлая, 2 — тёмная
+
+    public bool IsThemeSystem { get => ThemeIndex == 0; set { if (value) ThemeIndex = 0; } }
+    public bool IsThemeLight { get => ThemeIndex == 1; set { if (value) ThemeIndex = 1; } }
+    public bool IsThemeDark { get => ThemeIndex == 2; set { if (value) ThemeIndex = 2; } }
+
+    partial void OnThemeIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsThemeSystem));
+        OnPropertyChanged(nameof(IsThemeLight));
+        OnPropertyChanged(nameof(IsThemeDark));
+        if (_loading) return;
+        var mode = value switch { 1 => UiThemeMode.Light, 2 => UiThemeMode.Dark, _ => UiThemeMode.System };
+        ThemeService.Apply(mode);
+    }
+
+    public string ThemeHotkey => OperatingSystem.IsMacOS() ? "⇧⌘L" : "Ctrl+Shift+L";
+    public string HotkeysText => OperatingSystem.IsMacOS()
+        ? "⌘N — новый проект · ⌘O — добавить существующий · ⌘F — поиск · ⌘1…4 — вкладки · ⌘, — настройки · ⇧⌘L — тема · ⌘R — обновить"
+        : "Ctrl+N — новый проект · Ctrl+O — добавить существующий · Ctrl+F — поиск · Ctrl+1…4 — вкладки · Ctrl+, — настройки · Ctrl+Shift+L — тема · F5 — обновить";
     public ObservableCollection<string> InstalledEditors { get; } = [];
     public string LauncherVersion { get; } = "Moewshare Launcher " +
         (Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "0.1.0").Split('+')[0];
@@ -29,6 +49,7 @@ public sealed partial class SettingsViewModel(ISettingsService settings, IEditor
         ProjectsFolder = settings.Current.ProjectsFolder;
         EnginesFolder = settings.Current.EnginesFolder;
         AutoCheckUpdates = settings.Current.AutoCheckUpdates;
+        ThemeIndex = ThemeService.Mode switch { UiThemeMode.Light => 1, UiThemeMode.Dark => 2, _ => 0 };
         _loading = false;
         await RefreshEditorsAsync();
     }

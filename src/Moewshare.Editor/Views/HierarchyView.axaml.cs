@@ -20,7 +20,6 @@ public partial class HierarchyView : UserControl
         AddHandler(PointerPressedEvent, OnHierarchyPointerPressed, RoutingStrategies.Tunnel);
         AddHandler(PointerMovedEvent, OnHierarchyPointerMoved, RoutingStrategies.Tunnel);
         AddHandler(PointerReleasedEvent, OnHierarchyPointerReleased, RoutingStrategies.Tunnel);
-        AddHandler(KeyDownEvent, OnHierarchyKeyDown, RoutingStrategies.Tunnel);
     }
 
     ObjectVM? GetItemUnderPointer(Point posInListBox)
@@ -104,8 +103,8 @@ public partial class HierarchyView : UserControl
             return;
 
         var cur = e.GetPosition(this);
-        // Robust threshold (14px) so trackpad clicks never falsely trigger dragging
-        if (!_isDragging && (Math.Abs(cur.X - _dragStartPoint.X) > 14 || Math.Abs(cur.Y - _dragStartPoint.Y) > 14))
+        // Robust threshold (6px) so mouse or trackpad dragging triggers smoothly
+        if (!_isDragging && (Math.Abs(cur.X - _dragStartPoint.X) > 6 || Math.Abs(cur.Y - _dragStartPoint.Y) > 6))
         {
             _isDragging = true;
         }
@@ -138,6 +137,7 @@ public partial class HierarchyView : UserControl
 
     void OnHierarchyPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        var targetCandidate = _currentDropTarget;
         if (_currentDropTarget is not null)
         {
             _currentDropTarget.IsDropTarget = false;
@@ -150,7 +150,7 @@ public partial class HierarchyView : UserControl
             {
                 var lb = this.FindControl<ListBox>("ObjectsListBox");
                 var posInListBox = lb is not null ? e.GetPosition(lb) : e.GetPosition(this);
-                var targetVm = GetItemUnderPointer(posInListBox);
+                var targetVm = targetCandidate ?? GetItemUnderPointer(posInListBox);
 
                 var itemsToMove = (panelVm.Editor.SelectedObjects.Contains(_draggedItem) && panelVm.Editor.SelectedObjects.Count > 1)
                     ? panelVm.Editor.SelectedObjects.ToList()
@@ -167,9 +167,9 @@ public partial class HierarchyView : UserControl
                     }
                     targetVm.IsExpanded = true;
                     panelVm.Editor.RefreshHierarchyTree();
+                    panelVm.Editor.SelectObject(_draggedItem);
+                    e.Handled = true;
                 }
-                // IMPORTANT: If dropped on empty space, we do NOT unparent automatically!
-                // Accidental drag/drop won't lose parenting.
             }
             else if (!_isDragging && _draggedItem is not null)
             {
@@ -186,38 +186,5 @@ public partial class HierarchyView : UserControl
 
         _draggedItem = null;
         _isDragging = false;
-    }
-
-    void OnHierarchyKeyDown(object? sender, KeyEventArgs e)
-    {
-        if (e.Source is TextBox || e.Handled || DataContext is not HierarchyPanelVM panelVm)
-            return;
-
-        // macOS: Cmd + Backspace (and Cmd + Delete)
-        // Windows/Linux: Delete
-        bool isMacDelete = e.KeyModifiers.HasFlag(KeyModifiers.Meta) && (e.Key is Key.Back or Key.Delete);
-        bool isWinDelete = !e.KeyModifiers.HasFlag(KeyModifiers.Meta) && (e.Key is Key.Delete);
-
-        if (isMacDelete || isWinDelete)
-        {
-            if (panelVm.Editor.Selected is not null || panelVm.Editor.SelectedObjects.Count > 0)
-            {
-                e.Handled = true;
-                _ = panelVm.Editor.DeleteSelectedCommand.ExecuteAsync(null);
-                return;
-            }
-        }
-
-        // Hotkey: Duplicate (macOS Cmd+D / Windows Ctrl+D)
-        bool isMacDup = e.KeyModifiers.HasFlag(KeyModifiers.Meta) && e.Key == Key.D;
-        bool isWinDup = e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.D;
-        if (isMacDup || isWinDup)
-        {
-            if (panelVm.Editor.Selected is not null || panelVm.Editor.SelectedObjects.Count > 0)
-            {
-                e.Handled = true;
-                panelVm.Editor.DuplicateSelectedCommand.Execute(null);
-            }
-        }
     }
 }

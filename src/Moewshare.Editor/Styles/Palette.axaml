@@ -1,0 +1,129 @@
+<!--
+  Moewshare — единая палитра оформления (светлая и тёмная темы).
+  Все цвета интерфейса берутся отсюда через {DynamicResource Ключ},
+  поэтому смена темы применяется мгновенно, без перезапуска.
+  Палитра идентична в лаунчере и редакторе.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <ResourceDictionary.ThemeDictionaries>
+
+    <!-- ===================== СВЕТЛАЯ ТЕМА ===================== -->
+    <ResourceDictionary x:Key="Light">
+      <!-- Поверхности -->
+      <SolidColorBrush x:Key="BgBrush" Color="#FFF4F3"/>
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="Surface2Brush" Color="#FFF8F9"/>
+      <SolidColorBrush x:Key="Surface3Brush" Color="#FCE8EC"/>
+      <SolidColorBrush x:Key="HoverBrush" Color="#FBE3E8"/>
+      <SolidColorBrush x:Key="InputBgBrush" Color="#FFFFFF"/>
+      <!-- Границы -->
+      <SolidColorBrush x:Key="BorderBrush2" Color="#F1D9DB"/>
+      <SolidColorBrush x:Key="BorderStrongBrush" Color="#E6BFC6"/>
+      <!-- Текст -->
+      <SolidColorBrush x:Key="TextBrush" Color="#482C30"/>
+      <SolidColorBrush x:Key="Text2Brush" Color="#86666C"/>
+      <SolidColorBrush x:Key="Text3Brush" Color="#B39AA0"/>
+      <!-- Акценты -->
+      <SolidColorBrush x:Key="AccentBrush" Color="#F7CDD5"/>
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#F3B9C5"/>
+      <SolidColorBrush x:Key="AccentTextBrush" Color="#8B1E2D"/>
+      <SolidColorBrush x:Key="PrimaryBrush" Color="#E05263"/>
+      <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#EA6577"/>
+      <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#C9424F"/>
+      <SolidColorBrush x:Key="OnPrimaryBrush" Color="#FFFFFF"/>
+      <!-- Статусы -->
+      <SolidColorBrush x:Key="DangerBrush" Color="#C0392B"/>
+      <SolidColorBrush x:Key="DangerSoftBrush" Color="#FDECEF"/>
+      <SolidColorBrush x:Key="SuccessBrush" Color="#1E8E52"/>
+      <SolidColorBrush x:Key="SuccessSoftBrush" Color="#E6F6EE"/>
+      <SolidColorBrush x:Key="WarningBrush" Color="#946300"/>
+      <SolidColorBrush x:Key="WarningSoftBrush" Color="#FFF4D6"/>
+      <SolidColorBrush x:Key="InfoBrush" Color="#2563A8"/>
+      <SolidColorBrush x:Key="InfoSoftBrush" Color="#E8F1FB"/>
+      <!-- Консоль / логи -->
+      <SolidColorBrush x:Key="CodeBgBrush" Color="#2C2328"/>
+      <SolidColorBrush x:Key="CodeTextBrush" Color="#F7D9E0"/>
+      <!-- Редактор событий (полотно графа) -->
+      <SolidColorBrush x:Key="GraphBgBrush" Color="#FBF6F7"/>
+      <SolidColorBrush x:Key="GraphGridBrush" Color="#2E482C30"/>
+      <SolidColorBrush x:Key="NodeBodyBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="NodeBorderBrush" Color="#E6CFD4"/>
+      <SolidColorBrush x:Key="NodeTextBrush" Color="#3A2428"/>
+      <SolidColorBrush x:Key="PortLabelBrush" Color="#6E5358"/>
+      <SolidColorBrush x:Key="ExecPinBrush" Color="#5A4448"/>
+      <SolidColorBrush x:Key="SelectionBrush" Color="#FF4B72"/>
+      <SolidColorBrush x:Key="SelectionFillBrush" Color="#1FFF4B72"/>
+      <!-- Подсказки поверх вьюпорта -->
+      <SolidColorBrush x:Key="HudBgBrush" Color="#E6FFFFFF"/>
+      <SolidColorBrush x:Key="HudTextBrush" Color="#482C30"/>
+      <!-- Переопределение цветов стандартных полей ввода Fluent -->
+      <SolidColorBrush x:Key="TextControlBackground" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="TextControlBorderBrush" Color="#E6CFD4"/>
+      <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#D9AEB7"/>
+      <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#E05263"/>
+      <SolidColorBrush x:Key="ComboBoxBackground" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#FFF8F9"/>
+      <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#E6CFD4"/>
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#D9AEB7"/>
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#FFFFFF"/>
+    </ResourceDictionary>
+
+    <!-- ===================== ТЁМНАЯ ТЕМА ===================== -->
+    <ResourceDictionary x:Key="Dark">
+      <SolidColorBrush x:Key="BgBrush" Color="#141016"/>
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#1E1920"/>
+      <SolidColorBrush x:Key="Surface2Brush" Color="#251F28"/>
+      <SolidColorBrush x:Key="Surface3Brush" Color="#2F2733"/>
+      <SolidColorBrush x:Key="HoverBrush" Color="#3A3040"/>
+      <SolidColorBrush x:Key="InputBgBrush" Color="#19151B"/>
+      <SolidColorBrush x:Key="BorderBrush2" Color="#362D3B"/>
+      <SolidColorBrush x:Key="BorderStrongBrush" Color="#4A3E50"/>
+      <SolidColorBrush x:Key="TextBrush" Color="#F4EAEE"/>
+      <SolidColorBrush x:Key="Text2Brush" Color="#B9A8B1"/>
+      <SolidColorBrush x:Key="Text3Brush" Color="#7E6E77"/>
+      <SolidColorBrush x:Key="AccentBrush" Color="#45283A"/>
+      <SolidColorBrush x:Key="AccentHoverBrush" Color="#573146"/>
+      <SolidColorBrush x:Key="AccentTextBrush" Color="#FFB0C0"/>
+      <SolidColorBrush x:Key="PrimaryBrush" Color="#E05263"/>
+      <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#EB6A7C"/>
+      <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#C9424F"/>
+      <SolidColorBrush x:Key="OnPrimaryBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="DangerBrush" Color="#FF7A85"/>
+      <SolidColorBrush x:Key="DangerSoftBrush" Color="#3B1E25"/>
+      <SolidColorBrush x:Key="SuccessBrush" Color="#4ADE80"/>
+      <SolidColorBrush x:Key="SuccessSoftBrush" Color="#16301F"/>
+      <SolidColorBrush x:Key="WarningBrush" Color="#FBBF24"/>
+      <SolidColorBrush x:Key="WarningSoftBrush" Color="#352A12"/>
+      <SolidColorBrush x:Key="InfoBrush" Color="#7CB4FF"/>
+      <SolidColorBrush x:Key="InfoSoftBrush" Color="#1A2638"/>
+      <SolidColorBrush x:Key="CodeBgBrush" Color="#0F0C10"/>
+      <SolidColorBrush x:Key="CodeTextBrush" Color="#F7D9E0"/>
+      <SolidColorBrush x:Key="GraphBgBrush" Color="#17141A"/>
+      <SolidColorBrush x:Key="GraphGridBrush" Color="#26FFFFFF"/>
+      <SolidColorBrush x:Key="NodeBodyBrush" Color="#241E28"/>
+      <SolidColorBrush x:Key="NodeBorderBrush" Color="#3E3444"/>
+      <SolidColorBrush x:Key="NodeTextBrush" Color="#F4EAEE"/>
+      <SolidColorBrush x:Key="PortLabelBrush" Color="#D2C4CB"/>
+      <SolidColorBrush x:Key="ExecPinBrush" Color="#FFFFFF"/>
+      <SolidColorBrush x:Key="SelectionBrush" Color="#FF6B8B"/>
+      <SolidColorBrush x:Key="SelectionFillBrush" Color="#22FF6B8B"/>
+      <SolidColorBrush x:Key="HudBgBrush" Color="#D91E1920"/>
+      <SolidColorBrush x:Key="HudTextBrush" Color="#F4EAEE"/>
+      <SolidColorBrush x:Key="TextControlBackground" Color="#19151B"/>
+      <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#1E1920"/>
+      <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#19151B"/>
+      <SolidColorBrush x:Key="TextControlBorderBrush" Color="#3E3444"/>
+      <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#55475C"/>
+      <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#E8607A"/>
+      <SolidColorBrush x:Key="ComboBoxBackground" Color="#19151B"/>
+      <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#251F28"/>
+      <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#3E3444"/>
+      <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#55475C"/>
+      <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1E1920"/>
+    </ResourceDictionary>
+
+  </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

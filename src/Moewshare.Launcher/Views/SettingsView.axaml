@@ -1,14 +1,34 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Moewshare.Launcher.Views.SettingsView">
-  <ScrollViewer>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
     <StackPanel Margin="32,24" Spacing="16" MaxWidth="760" HorizontalAlignment="Left">
       <TextBlock Classes="h1" Text="Настройки"/>
+
+      <!-- Внешний вид -->
       <Border Classes="card">
         <StackPanel Spacing="12">
-          <TextBlock Classes="h2" Text="Папка проектов"/>
+          <TextBlock Classes="h2" Text="🎨 Внешний вид"/>
+          <TextBlock Classes="muted" TextWrapping="Wrap"
+                     Text="Тема применяется сразу к лаунчеру и редактору. «Как в системе» следует настройкам macOS / Windows."/>
+          <WrapPanel>
+            <RadioButton Classes="seg" GroupName="launcherTheme" Content="🖥  Как в системе"
+                         IsChecked="{Binding IsThemeSystem}"/>
+            <RadioButton Classes="seg" GroupName="launcherTheme" Content="☀️  Светлая"
+                         IsChecked="{Binding IsThemeLight}"/>
+            <RadioButton Classes="seg" GroupName="launcherTheme" Content="🌙  Тёмная"
+                         IsChecked="{Binding IsThemeDark}"/>
+          </WrapPanel>
+          <TextBlock Classes="muted" FontSize="12" Text="{Binding ThemeHotkey, StringFormat='Быстрое переключение: {0}'}"/>
+        </StackPanel>
+      </Border>
+
+      <!-- Папки -->
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="h2" Text="📁 Папка проектов"/>
           <DockPanel><Button DockPanel.Dock="Right" Classes="soft" Margin="8,0,0,0" Content="Обзор…" Command="{Binding BrowseProjectsCommand}"/><TextBox Text="{Binding ProjectsFolder}"/></DockPanel>
-          <TextBlock Classes="h2" Text="Папка установок редактора"/>
+          <TextBlock Classes="h2" Text="🧰 Папка установок редактора"/>
           <DockPanel><Button DockPanel.Dock="Right" Classes="soft" Margin="8,0,0,0" Content="Обзор…" Command="{Binding BrowseEnginesCommand}"/><TextBox Text="{Binding EnginesFolder}"/></DockPanel>
           <TextBlock Classes="muted" Text="Найденные редакторы:"/>
           <ItemsControl ItemsSource="{Binding InstalledEditors}">
@@ -16,19 +36,32 @@
           </ItemsControl>
         </StackPanel>
       </Border>
+
+      <!-- Общие -->
       <Border Classes="card">
         <StackPanel Spacing="10">
-          <TextBlock Classes="h2" Text="Общие"/>
-          <TextBlock Classes="muted" Text="Язык интерфейса: русский · Тема: светлая (другие пока не реализованы)"/>
+          <TextBlock Classes="h2" Text="⚙️ Общие"/>
+          <TextBlock Classes="muted" Text="Язык интерфейса: русский"/>
           <CheckBox IsChecked="{Binding AutoCheckUpdates}" Content="Автоматически проверять обновления"/>
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <Button Classes="soft" Content="Открыть папку журналов" Command="{Binding OpenLogsCommand}"/>
-            <Button Classes="soft" Content="Очистить временные файлы" Command="{Binding ClearTempCommand}"/>
-            <Button Classes="soft" Content="Сбросить настройки" Command="{Binding ResetCommand}"/>
-          </StackPanel>
-          <TextBlock Foreground="#C0392B" Text="{Binding Info}" TextWrapping="Wrap"/>
+          <WrapPanel>
+            <Button Classes="soft" Content="Открыть папку журналов" Command="{Binding OpenLogsCommand}" Margin="0,0,8,8"/>
+            <Button Classes="soft" Content="Очистить временные файлы" Command="{Binding ClearTempCommand}" Margin="0,0,8,8"/>
+            <Button Classes="danger" Content="Сбросить настройки" Command="{Binding ResetCommand}" Margin="0,0,8,8"/>
+          </WrapPanel>
+          <TextBlock Classes="danger" Text="{Binding Info}" TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
+
+      <!-- Горячие клавиши -->
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Classes="h2" Text="⌨️ Горячие клавиши лаунчера"/>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Text="{Binding HotkeysText}"/>
+          <TextBlock Classes="muted" FontSize="12" TextWrapping="Wrap"
+                     Text="Полный список клавиш редактора — в самом редакторе: F1 или меню «Справка → Горячие клавиши»."/>
+        </StackPanel>
+      </Border>
+
       <TextBlock Classes="muted" Text="{Binding LauncherVersion}"/>
     </StackPanel>
   </ScrollViewer>

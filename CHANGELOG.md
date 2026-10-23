@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.1-design] - 2026-10-23
+
+### Added
+- Light / dark / system theme for Launcher and Editor (shared `theme.txt` preference, `Styles/Palette.axaml`).
+- Platform-aware hotkeys (Ctrl on Windows, ⌘ on macOS), hotkeys help window (F1), `docs/HOTKEYS.md`.
+- Scene-wide Undo/Redo (incl. event graphs), object copy/cut/paste, select all, rename, hide.
+- Event graph: marquee & multi-selection, multi-drag, groups (`EventGraph.Groups`), copy/cut/paste/duplicate, bulk delete, context menu, node palette at cursor.
+- Status bar, active dock tab highlight, collapsible empty dock zones.
+
+### Changed
+- All hardcoded UI colors replaced by theme resources; text trimming/wrapping to prevent overflow.
+- Object deletion no longer asks for confirmation (undoable).
+
 ## [0.1.0-events] - 2026-10-22
 
 ### Added

@@ -28,5 +28,9 @@ public sealed class ConsoleEntry
         _ => new SolidColorBrush(Color.Parse("#8E44AD"))
     };
 
+    public bool IsError => Level == ConsoleLevel.Error;
+    public bool IsWarning => Level == ConsoleLevel.Warning;
+    public bool IsSuccess => Level == ConsoleLevel.Success;
+
     public string DisplayText => $"[{TimeFormatted}] {Icon} {Message}";
 }

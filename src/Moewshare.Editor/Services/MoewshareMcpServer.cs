@@ -881,7 +881,7 @@ public sealed class MoewshareMcpServer : IDisposable
                             graphVM.NotifyGraphChanged();
                         }
 
-                        _editor.IsDirty = true;
+                        _editor.MarkDirty();
                         return JsonSerializer.Serialize(new
                         {
                             success = true,
@@ -925,7 +925,7 @@ public sealed class MoewshareMcpServer : IDisposable
 
                         var graphPanel = _editor.AllPanels.FirstOrDefault(p => p.Id == "eventgraph") as EventGraphPanelVM;
                         graphPanel?.GraphVM.NotifyGraphChanged();
-                        _editor.IsDirty = true;
+                        _editor.MarkDirty();
 
                         return JsonSerializer.Serialize(new { success = true, message = "Соединение успешно создано" });
                     }
@@ -957,7 +957,7 @@ public sealed class MoewshareMcpServer : IDisposable
 
                         var graphPanel = _editor.AllPanels.FirstOrDefault(p => p.Id == "eventgraph") as EventGraphPanelVM;
                         graphPanel?.GraphVM.RefreshVariables();
-                        _editor.IsDirty = true;
+                        _editor.MarkDirty();
 
                         return JsonSerializer.Serialize(new { success = true, message = $"Переменная «{varName}» создана", name = varName });
                     }

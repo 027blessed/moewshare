@@ -9,6 +9,7 @@ public class MockEditorUi : IEditorUi
     public Task<string?> PickFileAsync(string title, string startDir) => Task.FromResult<string?>(null);
     public Task<string?> PickFolderAsync(string title) => Task.FromResult<string?>(null);
     public Task<bool> ConfirmAsync(string title, string message, string okText) => Task.FromResult(true);
+    public Task<string?> PromptAsync(string title, string message, string defaultValue = "") => Task.FromResult<string?>(defaultValue);
     public Task MessageAsync(string title, string message) => Task.CompletedTask;
     public Task ShowAddObjectDialogAsync(EditorViewModel editor) => Task.CompletedTask;
     public Task ShowSettingsDialogAsync(EditorViewModel editor) => Task.CompletedTask;
@@ -351,5 +352,139 @@ public class EditorVmTests : TempDirTest
         Assert.Null(player.ParentId);
         Assert.Equal(Behaviors.TopDown, player.Behavior);
         Assert.True(player.HasTopDownComponent);
+    }
+
+    [Fact]
+    public async Task Parenting_circle_to_cube_preserves_parent_on_selection_and_click()
+    {
+        var folder = Path.Combine(Dir, "ParentingTest");
+        await ProjectScaffolder.CreateAsync(folder, "ParentGame", "empty3d");
+
+        var vm = new EditorViewModel(new MockEditorUi());
+        await vm.StartAsync(folder);
+
+        // Add Cube
+        vm.AddFromTemplate("box");
+        var cube = vm.Selected!;
+        cube.Name = "Cube";
+        cube.PosX = 10; cube.PosY = 0; cube.PosZ = 0;
+
+        // Add Sphere (Circle)
+        vm.AddFromTemplate("sphere");
+        var sphere = vm.Selected!;
+        sphere.Name = "Sphere";
+        sphere.PosX = 12; sphere.PosY = 2; sphere.PosZ = 0;
+
+        // Attach sphere to cube
+        vm.AttachTo(sphere, cube);
+
+        Assert.Equal(cube.Id, sphere.ParentId);
+        Assert.True(sphere.HasParent);
+
+        // Selecting sphere must NOT reset ParentId (the critical ComboBox / selection bug)
+        vm.SelectObject(sphere);
+        Assert.Equal(cube.Id, sphere.ParentId);
+        Assert.True(sphere.HasParent);
+        Assert.NotNull(vm.SelectedParentOption);
+        Assert.Equal(cube.Id, vm.SelectedParentOption.Id);
+
+        // Selecting cube must NOT reset ParentId of sphere
+        vm.SelectObject(cube);
+        Assert.Equal(cube.Id, sphere.ParentId);
+
+        // Selecting sphere again
+        vm.SelectObject(sphere);
+        Assert.Equal(cube.Id, sphere.ParentId);
+
+        // Deselecting and selecting again
+        vm.DeselectAll();
+        Assert.Null(vm.Selected);
+        Assert.Equal(cube.Id, sphere.ParentId);
+
+        vm.SelectObject(sphere);
+        Assert.Equal(cube.Id, sphere.ParentId);
+    }
+
+    [Fact]
+    public async Task Parent_and_child_move_together_via_world_transforms()
+    {
+        var folder = Path.Combine(Dir, "GluedTransformsTest");
+        await ProjectScaffolder.CreateAsync(folder, "GluedGame", "empty3d");
+
+        var vm = new EditorViewModel(new MockEditorUi());
+        await vm.StartAsync(folder);
+
+        vm.AddFromTemplate("box");
+        var parent = vm.Selected!;
+        parent.PosX = 0; parent.PosY = 0; parent.PosZ = 0;
+
+        vm.AddFromTemplate("sphere");
+        var child = vm.Selected!;
+        child.PosX = 5; child.PosY = 0; child.PosZ = 0;
+
+        vm.AttachTo(child, parent);
+
+        // Child world position before moving parent
+        var worldBefore = vm.GetWorldPosition(child);
+        Assert.Equal(5, worldBefore.X);
+        Assert.Equal(0, worldBefore.Y);
+        Assert.Equal(0, worldBefore.Z);
+
+        // Move parent by +10 on X
+        parent.PosX = 10;
+        var worldAfter = vm.GetWorldPosition(child);
+        Assert.Equal(15, worldAfter.X); // Moves together with parent!
+
+        // Rotate parent 90 degrees on Y
+        parent.RotY = 90;
+        var worldRot = vm.GetWorldPosition(child);
+        // At 90 deg rotation around Y, offset (5, 0, 0) rotates to (0, 0, -5) relative to parent (10, 0, 0)
+        Assert.InRange(worldRot.X, 9.9, 10.1);
+        Assert.InRange(worldRot.Z, -5.1, -4.9);
+    }
+
+    [Fact]
+    public async Task Assets_folder_creation_deletion_and_move_work()
+    {
+        var folder = Path.Combine(Dir, "AssetsTest");
+        await ProjectScaffolder.CreateAsync(folder, "AssetsGame", "empty3d");
+
+        var vm = new EditorViewModel(new MockEditorUi());
+        await vm.StartAsync(folder);
+
+        var assetsRoot = Path.Combine(folder, "Assets");
+        var modelsDir = Path.Combine(assetsRoot, "Models");
+        Directory.CreateDirectory(modelsDir);
+
+        var testObjFile = Path.Combine(assetsRoot, "sample.obj");
+        File.WriteAllText(testObjFile, "v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n");
+
+        vm.RefreshAssets();
+        Assert.Contains(vm.CurrentFolderAssets, a => a.Name == "sample.obj" && a.IsModel);
+
+        var sourceItem = vm.CurrentFolderAssets.First(a => a.Name == "sample.obj");
+        var targetFolderItem = vm.CurrentFolderAssets.First(a => a.Name == "Models" && a.IsDirectory);
+
+        // Move sample.obj into Models folder
+        vm.MoveAssetToFolder(sourceItem, targetFolderItem);
+
+        Assert.False(File.Exists(testObjFile));
+        Assert.True(File.Exists(Path.Combine(modelsDir, "sample.obj")));
+
+        // Navigate into Models folder
+        vm.NavigateIntoFolder(targetFolderItem);
+        Assert.True(vm.CanNavigateUp);
+        Assert.Contains(vm.CurrentFolderAssets, a => a.Name == "sample.obj");
+
+        // Spawn model on scene
+        var modelAsset = vm.CurrentFolderAssets.First(a => a.Name == "sample.obj");
+        vm.SpawnAssetOnScene(modelAsset, new Vec3(2, 0, 3));
+
+        var spawned = vm.Objects.FirstOrDefault(o => o.Type == ObjectTypes.Model);
+        Assert.NotNull(spawned);
+        Assert.Equal("sample", spawned.Name);
+        Assert.Equal("Assets/Models/sample.obj", spawned.ModelPath);
+        Assert.Equal(2, spawned.PosX);
+        Assert.Equal(3, spawned.PosZ);
     }
 }

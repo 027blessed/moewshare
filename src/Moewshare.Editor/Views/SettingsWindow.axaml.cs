@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Media;
 using Moewshare.Editor.Configuration;
 using Moewshare.Editor.Services;
 using Moewshare.Editor.ViewModels;
+using Moewshare.Engine;
 
 namespace Moewshare.Editor.Views;
 
@@ -22,6 +22,8 @@ public partial class SettingsWindow : Window
         _settings = EditorSettingsService.Load();
 
         LoadValuesToUi();
+        LoadThemeToUi();
+        KeyDown += (_, e) => { if (e.Key == Avalonia.Input.Key.Escape) { Close(); e.Handled = true; } };
 
         if (_editor?.McpServer != null)
         {
@@ -49,6 +51,37 @@ public partial class SettingsWindow : Window
         BoxMcpPort.Text = _settings.McpPort.ToString();
     }
 
+    private bool _loadingTheme;
+
+    private void LoadThemeToUi()
+    {
+        _loadingTheme = true;
+        ThemeSystem.IsChecked = ThemeManager.Mode == UiThemeMode.System;
+        ThemeLight.IsChecked = ThemeManager.Mode == UiThemeMode.Light;
+        ThemeDark.IsChecked = ThemeManager.Mode == UiThemeMode.Dark;
+        _loadingTheme = false;
+
+        ThemeHotkeyHint.Text = $"Быстрое переключение светлая ↔ тёмная: {Hk.Label(Hk.ToggleTheme)}";
+        HotkeysInfo.Text = Hk.IsMac
+            ? "На macOS команды вызываются через ⌘ (Command): ⌘S — сохранить, ⌘Z — отменить, ⌘D — дублировать, ⌘G — группа блоков. Полный список — F1."
+            : "На Windows команды вызываются через Ctrl: Ctrl+S — сохранить, Ctrl+Z — отменить, Ctrl+D — дублировать, Ctrl+G — группа блоков. Полный список — F1.";
+    }
+
+    private void OnThemeRadioChanged(object? sender, RoutedEventArgs e)
+    {
+        // Click срабатывает только от действия пользователя (не при программной установке IsChecked)
+        if (_loadingTheme || sender is not RadioButton rb) return;
+        rb.IsChecked = true;
+        var mode = rb == ThemeDark ? UiThemeMode.Dark : rb == ThemeLight ? UiThemeMode.Light : UiThemeMode.System;
+        ThemeManager.Apply(mode);
+        StatusInfoText.Text = $"Тема: {ThemeManager.Title(mode)} — применено.";
+    }
+
+    private void OnHotkeysClick(object? sender, RoutedEventArgs e)
+    {
+        _ = new HotkeysWindow().ShowDialog(this);
+    }
+
     private void UpdateMcpStatusUi()
     {
         var isRunning = _editor?.McpServer?.IsRunning ?? false;
@@ -56,18 +89,22 @@ public partial class SettingsWindow : Window
 
         if (isRunning)
         {
-            BadgeServerStatus.Background = Brush.Parse("#E8F8F5");
+            BadgeServerStatus.Classes.Set("banner-success", true);
+            BadgeServerStatus.Classes.Set("sunken", false);
             TextServerStatus.Text = $"🟢 Активен (порт {port})";
-            TextServerStatus.Foreground = Brush.Parse("#27AE60");
+            TextServerStatus.Classes.Set("success", true);
+            TextServerStatus.Classes.Set("muted", false);
             TextServerEndpoint.Text = $"Эндпоинт: http://127.0.0.1:{port}/mcp";
             BtnToggleServer.Content = "Остановить сервер";
             McpHeaderBadge.Text = "🟢 AI & MCP подключен";
         }
         else
         {
-            BadgeServerStatus.Background = Brush.Parse("#F2F4F4");
+            BadgeServerStatus.Classes.Set("banner-success", false);
+            BadgeServerStatus.Classes.Set("sunken", true);
             TextServerStatus.Text = "⚪ Остановлен";
-            TextServerStatus.Foreground = Brush.Parse("#7F8C8D");
+            TextServerStatus.Classes.Set("success", false);
+            TextServerStatus.Classes.Set("muted", true);
             TextServerEndpoint.Text = "Сервер отключен в настройках";
             BtnToggleServer.Content = "Запустить сервер";
             McpHeaderBadge.Text = "⚪ MCP сервер выключен";

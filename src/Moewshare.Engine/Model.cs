@@ -7,11 +7,11 @@ public enum ProjectKind { TwoD, ThreeD }
 
 public static class ObjectTypes
 {
-    public const string Box = "box", Sphere = "sphere", Cylinder = "cylinder", Plane = "plane", Light = "light", Sprite = "sprite";
+    public const string Box = "box", Sphere = "sphere", Cylinder = "cylinder", Plane = "plane", Light = "light", Sprite = "sprite", Model = "model";
     public const string Canvas = "ui_canvas", UiText = "ui_text", UiImage = "ui_image", UiButton = "ui_button";
-    public static readonly string[] WorldTypes = [Box, Sphere, Cylinder, Plane, Light, Sprite];
+    public static readonly string[] WorldTypes = [Box, Sphere, Cylinder, Plane, Light, Sprite, Model];
     public static readonly string[] UiTypes = [Canvas, UiText, UiImage, UiButton];
-    public static readonly string[] All = [Box, Sphere, Cylinder, Plane, Light, Sprite, Canvas, UiText, UiImage, UiButton];
+    public static readonly string[] All = [Box, Sphere, Cylinder, Plane, Light, Sprite, Model, Canvas, UiText, UiImage, UiButton];
 }
 
 public static class ComponentTypes
@@ -119,6 +119,8 @@ public sealed class SceneObject
     public Vec3 Scale { get; set; } = new(1, 1, 1);
     public string Color { get; set; } = "#F7CDD5";
     public string? Texture { get; set; }
+    /// <summary>Относительный путь к файлу 3D модели (obj, fbx, stl, glb, gltf).</summary>
+    public string? ModelPath { get; set; }
     /// <summary>Участвует в столкновениях (AABB, без учёта поворота).</summary>
     public bool Solid { get; set; }
     public string Behavior { get; set; } = Behaviors.None;

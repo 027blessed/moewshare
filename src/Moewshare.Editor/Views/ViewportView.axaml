@@ -5,28 +5,29 @@
              x:Class="Moewshare.Editor.Views.ViewportView"
              x:DataType="vm:ViewportPanelVM">
   <DockPanel>
-    <!-- Viewport Toolbar -->
-    <Border DockPanel.Dock="Top" Background="#FFF8F9" BorderBrush="#F1D9DB" BorderThickness="0,0,0,1" Padding="8,4">
+    <!-- Панель вьюпорта -->
+    <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="0,0,0,1" Padding="6,3">
       <DockPanel>
-        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4">
-          <Button Classes="soft" Content="3D" Click="OnPerspectiveClick" ToolTip.Tip="3D Перспектива"/>
-          <Button Classes="soft" Content="🗺️ Изометрия" Click="OnIsometricClick" ToolTip.Tip="Изометрический вид (45°)"/>
-          <Button Classes="soft" Content="📐 Сверху" Click="OnTopClick" ToolTip.Tip="Вид сверху"/>
-          <Button Classes="soft" Content="🎮 Спереди (2D)" Click="OnFrontClick" ToolTip.Tip="Вид спереди (2D)"/>
-          <Button Classes="soft" Content="🎯 Фокус (F)" Command="{Binding Editor.FocusOnSelectedCommand}" ToolTip.Tip="Сфокусировать камеру на объекте"/>
-        </StackPanel>
+        <WrapPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+          <Button Classes="tool" Content="3D" Click="OnPerspectiveClick" ToolTip.Tip="3D перспектива" Margin="1"/>
+          <Button Classes="tool" Content="🗺️ Изометрия" Click="OnIsometricClick" ToolTip.Tip="Изометрический вид (45°)" Margin="1"/>
+          <Button Classes="tool" Content="📐 Сверху" Click="OnTopClick" ToolTip.Tip="Вид сверху" Margin="1"/>
+          <Button Classes="tool" Content="🎮 Спереди 2D" Click="OnFrontClick" ToolTip.Tip="Вид спереди (2D)" Margin="1"/>
+        </WrapPanel>
 
-        <StackPanel Orientation="Horizontal" Spacing="4">
-          <Button Classes="soft" Content="✋ Q" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="select" ToolTip.Tip="Режим выбора (Q)"/>
-          <Button Classes="soft" Content="↔ W" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="translate" ToolTip.Tip="Режим перемещения (W)"/>
-          <Button Classes="soft" Content="🔄 E" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="rotate" ToolTip.Tip="Режим вращения (E)"/>
-          <Button Classes="soft" Content="⤢ R" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="scale" ToolTip.Tip="Режим масштабирования (R)"/>
+        <StackPanel Orientation="Horizontal" Spacing="1" VerticalAlignment="Center">
+          <Button Classes="icon" Classes.active="{Binding Editor.IsModeSelect}" Content="✋" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="select" ToolTip.Tip="{Binding Editor.TipSelect}"/>
+          <Button Classes="icon" Classes.active="{Binding Editor.IsModeTranslate}" Content="↔" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="translate" ToolTip.Tip="{Binding Editor.TipMove}"/>
+          <Button Classes="icon" Classes.active="{Binding Editor.IsModeRotate}" Content="🔄" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="rotate" ToolTip.Tip="{Binding Editor.TipRotate}"/>
+          <Button Classes="icon" Classes.active="{Binding Editor.IsModeScale}" Content="⤢" Command="{Binding Editor.SetGizmoModeCommand}" CommandParameter="scale" ToolTip.Tip="{Binding Editor.TipScale}"/>
+          <Border Classes="vsep" Height="18"/>
+          <Button Classes="icon" Content="🎯" Command="{Binding Editor.FocusOnSelectedCommand}" ToolTip.Tip="{Binding Editor.TipFocus}"/>
         </StackPanel>
       </DockPanel>
     </Border>
 
-    <!-- 3D Scene Viewport -->
-    <Border Margin="2" CornerRadius="12" ClipToBounds="True" BorderBrush="#F1D9DB" BorderThickness="1">
+    <!-- 3D-вьюпорт -->
+    <Border Margin="4" CornerRadius="10" ClipToBounds="True" BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1">
       <v:ScenePreview x:Name="PreviewControl"/>
     </Border>
   </DockPanel>

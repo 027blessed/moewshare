@@ -3,9 +3,14 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
+using Moewshare.Editor.Services;
 using Moewshare.Editor.ViewModels;
 using Moewshare.Engine;
+using Path = System.IO.Path;
+using File = System.IO.File;
+using Directory = System.IO.Directory;
 
 namespace Moewshare.Editor.Views;
 
@@ -41,22 +46,85 @@ public sealed class ScenePreview : Control
     // Texture image cache
     static readonly Dictionary<string, Bitmap> _textureCache = new();
 
+    sealed class ObjMesh
+    {
+        public List<Vec3> Vertices { get; } = [];
+        public List<int[]> Faces { get; } = [];
+    }
+    static readonly Dictionary<string, ObjMesh> _objCache = new();
+
+    static ObjMesh? LoadObjMesh(string path)
+    {
+        if (_objCache.TryGetValue(path, out var cached)) return cached;
+        if (!File.Exists(path)) return null;
+        try
+        {
+            var mesh = new ObjMesh();
+            var rawVerts = new List<Vec3>();
+            foreach (var line in File.ReadLines(path))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.StartsWith("v "))
+                {
+                    var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 4 &&
+                        double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vx) &&
+                        double.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vy) &&
+                        double.TryParse(parts[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vz))
+                    {
+                        rawVerts.Add(new Vec3(vx, vy, vz));
+                    }
+                }
+                else if (trimmed.StartsWith("f "))
+                {
+                    var parts = trimmed.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var faceVerts = new List<int>();
+                    for (int i = 1; i < parts.Length; i++)
+                    {
+                        var slash = parts[i].IndexOf('/');
+                        var vStr = slash >= 0 ? parts[i][..slash] : parts[i];
+                        if (int.TryParse(vStr, out var vIdx))
+                        {
+                            faceVerts.Add(vIdx > 0 ? vIdx - 1 : rawVerts.Count + vIdx);
+                        }
+                    }
+                    if (faceVerts.Count >= 3)
+                    {
+                        mesh.Faces.Add(faceVerts.ToArray());
+                    }
+                }
+            }
+
+            if (rawVerts.Count == 0) return null;
+
+            double minX = rawVerts.Min(v => v.X), maxX = rawVerts.Max(v => v.X);
+            double minY = rawVerts.Min(v => v.Y), maxY = rawVerts.Max(v => v.Y);
+            double minZ = rawVerts.Min(v => v.Z), maxZ = rawVerts.Max(v => v.Z);
+            double centerX = (minX + maxX) / 2.0;
+            double centerY = (minY + maxY) / 2.0;
+            double centerZ = (minZ + maxZ) / 2.0;
+            double maxDim = Math.Max(maxX - minX, Math.Max(maxY - minY, maxZ - minZ));
+            if (maxDim <= 0.0001) maxDim = 1.0;
+
+            foreach (var v in rawVerts)
+            {
+                mesh.Vertices.Add(new Vec3(
+                    (v.X - centerX) / maxDim,
+                    (v.Y - centerY) / maxDim,
+                    (v.Z - centerZ) / maxDim
+                ));
+            }
+
+            _objCache[path] = mesh;
+            return mesh;
+        }
+        catch { return null; }
+    }
+
     public Vec3 GetWorldPosition(ObjectVM vm)
     {
-        var p = vm.Model.Position;
-        var res = new Vec3(p.X, p.Y, p.Z);
-        var cur = vm;
-        int depth = 0;
-        while (!string.IsNullOrEmpty(cur.ParentId) && depth++ < 10)
-        {
-            var parent = _vm?.Objects.FirstOrDefault(o => o.Id == cur.ParentId);
-            if (parent is null || parent == cur) break;
-            res.X += parent.PosX;
-            res.Y += parent.PosY;
-            res.Z += parent.PosZ;
-            cur = parent;
-        }
-        return res;
+        if (_vm is not null) return _vm.GetWorldPosition(vm);
+        return new Vec3(vm.PosX, vm.PosY, vm.PosZ);
     }
 
     public ScenePreview()
@@ -66,10 +134,21 @@ public sealed class ScenePreview : Control
 
         _flightTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _flightTimer.Tick += OnFlightTick;
+
+        DragDrop.SetAllowDrop(this, true);
+        AddHandler(DragDrop.DragOverEvent, OnViewportDragOver);
+        AddHandler(DragDrop.DropEvent, OnViewportDrop);
+        ActualThemeVariantChanged += (_, _) => InvalidateVisual();
     }
 
     public void Attach(EditorViewModel vm)
     {
+        if (_vm == vm) return;
+        if (_vm is not null)
+        {
+            _vm.SceneChanged -= InvalidateVisual;
+            _vm.RequestFocus -= FocusOnSelected;
+        }
         _vm = vm;
         vm.SceneChanged += InvalidateVisual;
         vm.RequestFocus += FocusOnSelected;
@@ -389,7 +468,14 @@ public sealed class ScenePreview : Control
             return;
         }
 
-        // 4. Box / Plane / Cylinder rendering as shaded 3D mesh
+        // 4. 3D Model (.obj, .fbx, .stl, .glb) rendering
+        if (o.Type == ObjectTypes.Model || !string.IsNullOrEmpty(o.ModelPath))
+        {
+            RenderModelMesh(ctx, vm, worldPos, isSelected);
+            return;
+        }
+
+        // 5. Box / Plane / Cylinder rendering as shaded 3D mesh
         var halfX = Math.Abs(o.Scale.X) / 2.0;
         var halfY = Math.Abs(o.Scale.Y) / 2.0;
         var halfZ = Math.Abs(o.Scale.Z) / 2.0;
@@ -588,10 +674,6 @@ public sealed class ScenePreview : Control
 
     void RenderHud(DrawingContext ctx)
     {
-        var hintBg = new SolidColorBrush(Color.Parse("#DDFFFFFF"));
-        var hudRect = new Rect(10, 10, 420, 28);
-        ctx.FillRectangle(hintBg, hudRect, 8);
-
         var modeName = _vm?.CurrentGizmoMode switch
         {
             GizmoMode.Translate => "Перемещение (W)",
@@ -602,15 +684,24 @@ public sealed class ScenePreview : Control
 
         var pipetteHint = _vm?.IsEyeDropperActive == true ? " | 🧪 Кликните по объекту!" : "";
 
+        var orbit = OperatingSystem.IsMacOS() ? "⌥+ЛКМ" : "Alt+ЛКМ";
         var text = new FormattedText(
-            $"[ {modeName} ]  ПКМ: Полёт (WASD)  F: Фокус{pipetteHint}",
+            $"{modeName}   ·   ПКМ + WASD — полёт   ·   {orbit} — орбита   ·   F — фокус   ·   F1 — все клавиши{pipetteHint}",
             System.Globalization.CultureInfo.CurrentCulture,
             FlowDirection.LeftToRight,
             new Typeface("Inter,system-ui,sans-serif"),
             11.5,
-            _vm?.IsEyeDropperActive == true ? Brushes.DeepPink : new SolidColorBrush(Color.Parse("#482C30"))
-        );
-        ctx.DrawText(text, new Point(18, 16));
+            _vm?.IsEyeDropperActive == true ? Brushes.DeepPink : this.ResBrush("HudTextBrush", new SolidColorBrush(Color.Parse("#482C30"))))
+        {
+            MaxTextWidth = Math.Max(60, Bounds.Width - 40),
+            Trimming = TextTrimming.CharacterEllipsis,
+            MaxLineCount = 1
+        };
+        var hudRect = new Rect(10, 10, Math.Min(Bounds.Width - 20, text.Width + 20), 28);
+        if (hudRect.Width <= 0) return;
+        ctx.DrawRectangle(this.ResBrush("HudBgBrush", new SolidColorBrush(Color.Parse("#DDFFFFFF"))),
+            new Pen(this.ResBrush("BorderBrush2", Brushes.Transparent), 1), hudRect, 8, 8);
+        ctx.DrawText(text, new Point(20, 10 + (28 - text.Height) / 2));
     }
 
     Rect GetDeviceCanvasRect(string? preset)
@@ -1079,6 +1170,22 @@ public sealed class ScenePreview : Control
             {
                 foreach (var obj in _vm.SelectedObjects)
                 {
+                    // Skip if any ancestor is also in SelectedObjects (avoid double translation)
+                    bool hasSelectedAncestor = false;
+                    var curP = obj.ParentId;
+                    int d = 0;
+                    while (!string.IsNullOrEmpty(curP) && d++ < 20)
+                    {
+                        var ancestor = _vm.Objects.FirstOrDefault(o => o.Id == curP);
+                        if (ancestor is not null && _vm.SelectedObjects.Contains(ancestor))
+                        {
+                            hasSelectedAncestor = true;
+                            break;
+                        }
+                        curP = ancestor?.ParentId;
+                    }
+                    if (hasSelectedAncestor) continue;
+
                     if (_dragStartMultiPos.TryGetValue(obj, out var startP))
                     {
                         if (_activeGizmoAxis == "X" || _activeGizmoAxis == "XYZ") obj.PosX = Math.Round(startP.X + dX, 2);
@@ -1128,6 +1235,32 @@ public sealed class ScenePreview : Control
 
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
+        if (_vm?.DraggedAsset is not null)
+        {
+            var asset = _vm.DraggedAsset;
+            _vm.DraggedAsset = null;
+            var pt = e.GetPosition(this);
+            var spawnWorld = ScreenToGroundPlane(pt);
+
+            if (asset.IsModel)
+            {
+                _vm.SpawnAssetOnScene(asset, spawnWorld);
+            }
+            else if (asset.IsTexture)
+            {
+                var picked = PickObject(pt);
+                if (picked is not null)
+                {
+                    picked.Texture = asset.RelativePath;
+                    _vm.Say($"Текстура «{asset.Name}» применена к объекту «{picked.Name}».", ConsoleLevel.Success);
+                }
+                else
+                {
+                    _vm.SpawnAssetOnScene(asset, spawnWorld);
+                }
+            }
+        }
+
         _isFlying = false;
         _flightTimer.Stop();
         _isOrbiting = false;
@@ -1135,6 +1268,282 @@ public sealed class ScenePreview : Control
         _isDraggingUi = false;
         _activeGizmoAxis = null;
         InvalidateVisual();
+    }
+
+    public Vec3 ScreenToGroundPlane(Point screenPt)
+    {
+        var (fwd, right, up) = GetCameraVectors();
+        var f = Math.Max(Bounds.Height, Bounds.Width) * 0.9;
+        var xc_norm = (screenPt.X - Bounds.Width / 2.0) / f;
+        var yc_norm = (Bounds.Height / 2.0 - screenPt.Y) / f;
+
+        var dirX = fwd.X + right.X * xc_norm + up.X * yc_norm;
+        var dirY = fwd.Y + right.Y * xc_norm + up.Y * yc_norm;
+        var dirZ = fwd.Z + right.Z * xc_norm + up.Z * yc_norm;
+
+        if (Math.Abs(dirY) > 0.001)
+        {
+            var t = -_camPos.Y / dirY;
+            if (t > 0 && t < 100)
+            {
+                return new Vec3(
+                    Math.Round(_camPos.X + dirX * t, 1),
+                    0,
+                    Math.Round(_camPos.Z + dirZ * t, 1)
+                );
+            }
+        }
+        return new Vec3(
+            Math.Round(_camPos.X + fwd.X * 8.0, 1),
+            0,
+            Math.Round(_camPos.Z + fwd.Z * 8.0, 1)
+        );
+    }
+
+    void OnViewportDragOver(object? sender, DragEventArgs e)
+    {
+        if (e.Data.Contains(DataFormats.Files) || _vm?.DraggedAsset is not null)
+        {
+            e.DragEffects = DragDropEffects.Copy;
+        }
+        else
+        {
+            e.DragEffects = DragDropEffects.None;
+        }
+    }
+
+    void OnViewportDrop(object? sender, DragEventArgs e)
+    {
+        var pt = e.GetPosition(this);
+        var spawnWorld = ScreenToGroundPlane(pt);
+
+        if (_vm?.DraggedAsset is not null)
+        {
+            var asset = _vm.DraggedAsset;
+            _vm.DraggedAsset = null;
+            if (asset.IsModel)
+            {
+                _vm.SpawnAssetOnScene(asset, spawnWorld);
+            }
+            else if (asset.IsTexture)
+            {
+                var picked = PickObject(pt);
+                if (picked is not null)
+                {
+                    picked.Texture = asset.RelativePath;
+                    _vm.Say($"Текстура «{asset.Name}» применена к объекту «{picked.Name}».", ConsoleLevel.Success);
+                }
+                else
+                {
+                    _vm.SpawnAssetOnScene(asset, spawnWorld);
+                }
+            }
+            return;
+        }
+
+        var files = e.Data.GetFiles();
+        if (files is not null && _vm is not null)
+        {
+            foreach (var item in files)
+            {
+                var localPath = item.TryGetLocalPath();
+                if (!string.IsNullOrEmpty(localPath) && File.Exists(localPath))
+                {
+                    var ext = Path.GetExtension(localPath).ToLowerInvariant();
+                    var targetFolder = ext is ".obj" or ".fbx" or ".stl" or ".glb" or ".gltf"
+                        ? Path.Combine(_vm.ProjectFolder, "Assets", "Models")
+                        : Path.Combine(_vm.ProjectFolder, "Assets", "Textures");
+                    Directory.CreateDirectory(targetFolder);
+                    var dest = Path.Combine(targetFolder, Path.GetFileName(localPath));
+                    File.Copy(localPath, dest, true);
+                    _vm.RefreshAssets();
+                    var rel = Path.GetRelativePath(_vm.ProjectFolder, dest).Replace('\\', '/');
+                    if (ext is ".obj" or ".fbx" or ".stl" or ".glb" or ".gltf")
+                    {
+                        var assetItem = new AssetItemVM
+                        {
+                            Name = Path.GetFileName(dest),
+                            FullPath = dest,
+                            RelativePath = rel,
+                            IsDirectory = false,
+                            Kind = AssetKind.Model3D,
+                            Extension = ext
+                        };
+                        _vm.SpawnAssetOnScene(assetItem, spawnWorld);
+                    }
+                }
+            }
+        }
+    }
+
+    void RenderModelMesh(DrawingContext ctx, ObjectVM vm, Vec3 worldPos, bool isSelected)
+    {
+        var o = vm.Model;
+        var depth = GetDepth(worldPos);
+        if (depth <= 0.2) return;
+
+        var fullModelPath = !string.IsNullOrEmpty(o.ModelPath) && _vm is not null
+            ? (Path.IsPathRooted(o.ModelPath) ? o.ModelPath : Path.Combine(_vm.ProjectFolder, o.ModelPath))
+            : null;
+
+        var isObj = fullModelPath is not null && fullModelPath.EndsWith(".obj", StringComparison.OrdinalIgnoreCase);
+        var objMesh = isObj ? LoadObjMesh(fullModelPath!) : null;
+
+        Color.TryParse(o.Color, out var baseCol);
+        if (baseCol.A == 0) baseCol = Color.Parse("#DCDDE1");
+
+        var radX = o.Rotation.X * Math.PI / 180.0;
+        var radY = o.Rotation.Y * Math.PI / 180.0;
+        var radZ = o.Rotation.Z * Math.PI / 180.0;
+
+        Vec3 RotateModelVert(Vec3 v, double sx, double sy, double sz)
+        {
+            var vx = v.X * sx;
+            var vy = v.Y * sy;
+            var vz = v.Z * sz;
+
+            var y1 = vy * Math.Cos(radX) - vz * Math.Sin(radX);
+            var z1 = vy * Math.Sin(radX) + vz * Math.Cos(radX);
+            var x2 = vx * Math.Cos(radY) + z1 * Math.Sin(radY);
+            var z2 = -vx * Math.Sin(radY) + z1 * Math.Cos(radY);
+            var x3 = x2 * Math.Cos(radZ) - y1 * Math.Sin(radZ);
+            var y3 = x2 * Math.Sin(radZ) + y1 * Math.Cos(radZ);
+
+            return new Vec3(worldPos.X + x3, worldPos.Y + y3, worldPos.Z + z2);
+        }
+
+        if (objMesh is not null && objMesh.Vertices.Count > 0)
+        {
+            var projVerts = new Point?[objMesh.Vertices.Count];
+            var worldVerts = new Vec3[objMesh.Vertices.Count];
+            for (int i = 0; i < objMesh.Vertices.Count; i++)
+            {
+                var wv = RotateModelVert(objMesh.Vertices[i], o.Scale.X, o.Scale.Y, o.Scale.Z);
+                worldVerts[i] = wv;
+                projVerts[i] = Project3D(wv);
+            }
+
+            var wirePen = isSelected
+                ? new Pen(Brushes.DeepPink, 1.8)
+                : new Pen(new SolidColorBrush(Color.FromArgb(120, baseCol.R, baseCol.G, baseCol.B)), 0.8);
+
+            var faceBrush = new SolidColorBrush(Color.FromArgb(200, (byte)Math.Min(255, baseCol.R * 0.9), (byte)Math.Min(255, baseCol.G * 0.9), (byte)Math.Min(255, baseCol.B * 0.9)));
+
+            foreach (var face in objMesh.Faces)
+            {
+                if (face.Length < 3) continue;
+                bool allVisible = true;
+                for (int i = 0; i < face.Length; i++)
+                {
+                    if (face[i] < 0 || face[i] >= projVerts.Length || !projVerts[face[i]].HasValue)
+                    {
+                        allVisible = false;
+                        break;
+                    }
+                }
+                if (!allVisible) continue;
+
+                var geom = new StreamGeometry();
+                using (var gc = geom.Open())
+                {
+                    gc.BeginFigure(projVerts[face[0]]!.Value, true);
+                    for (int i = 1; i < face.Length; i++)
+                    {
+                        gc.LineTo(projVerts[face[i]]!.Value);
+                    }
+                    gc.EndFigure(true);
+                }
+                ctx.DrawGeometry(faceBrush, wirePen, geom);
+            }
+        }
+        else
+        {
+            var hX = Math.Abs(o.Scale.X) * 0.7;
+            var hY = Math.Abs(o.Scale.Y) * 0.9;
+            var hZ = Math.Abs(o.Scale.Z) * 0.7;
+
+            Vec3[] verts =
+            [
+                new(0, hY, 0),
+                new(hX, 0, 0),
+                new(0, 0, hZ),
+                new(-hX, 0, 0),
+                new(0, 0, -hZ),
+                new(0, -hY, 0)
+            ];
+
+            var worldV = new Vec3[6];
+            var projV = new Point?[6];
+            for (int i = 0; i < 6; i++)
+            {
+                worldV[i] = RotateModelVert(verts[i], 1, 1, 1);
+                projV[i] = Project3D(worldV[i]);
+            }
+
+            int[][] faces =
+            [
+                [0, 1, 2], [0, 2, 3], [0, 3, 4], [0, 4, 1],
+                [5, 2, 1], [5, 3, 2], [5, 4, 3], [5, 1, 4]
+            ];
+
+            double[] faceShades = [1.0, 0.85, 0.7, 0.85, 0.65, 0.5, 0.55, 0.6];
+
+            for (int i = 0; i < faces.Length; i++)
+            {
+                var f = faces[i];
+                if (!projV[f[0]].HasValue || !projV[f[1]].HasValue || !projV[f[2]].HasValue) continue;
+
+                var p0 = projV[f[0]]!.Value;
+                var p1 = projV[f[1]]!.Value;
+                var p2 = projV[f[2]]!.Value;
+                var normalZ = (p1.X - p0.X) * (p2.Y - p0.Y) - (p1.Y - p0.Y) * (p2.X - p0.X);
+                if (normalZ < 0) continue;
+
+                var shade = faceShades[i];
+                var fCol = Color.FromArgb(235, (byte)(baseCol.R * shade), (byte)(baseCol.G * shade), (byte)(baseCol.B * shade));
+                var fBrush = new SolidColorBrush(fCol);
+                var fPen = isSelected ? new Pen(Brushes.DeepPink, 1.8) : new Pen(new SolidColorBrush(Color.Parse("#44000000")), 1);
+
+                var geom = new StreamGeometry();
+                using (var gc = geom.Open())
+                {
+                    gc.BeginFigure(p0, true);
+                    gc.LineTo(p1);
+                    gc.LineTo(p2);
+                    gc.EndFigure(true);
+                }
+                ctx.DrawGeometry(fBrush, fPen, geom);
+            }
+        }
+
+        var topWorld = new Vec3(worldPos.X, worldPos.Y + Math.Abs(o.Scale.Y) * 1.1, worldPos.Z);
+        var topPt = Project3D(topWorld);
+        if (topPt.HasValue)
+        {
+            var badgeText = new FormattedText(
+                $"🧊 {vm.Name}",
+                System.Globalization.CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface("Inter,system-ui,sans-serif"),
+                11,
+                isSelected ? Brushes.DeepPink : new SolidColorBrush(Color.Parse("#4A2929"))
+            );
+            var pillRect = new Rect(topPt.Value.X - badgeText.Width / 2 - 4, topPt.Value.Y - 14, badgeText.Width + 8, 16);
+            ctx.FillRectangle(new SolidColorBrush(Color.Parse("#EEFCE8EC")), pillRect, 4);
+            ctx.DrawRectangle(new Pen(isSelected ? Brushes.DeepPink : new SolidColorBrush(Color.Parse("#DDFFB6C1")), 1), pillRect, 4);
+            ctx.DrawText(badgeText, new Point(pillRect.X + 4, pillRect.Y + 1));
+        }
+
+        if (isSelected)
+        {
+            var centerPt = Project3D(worldPos);
+            if (centerPt.HasValue)
+            {
+                var selPen = new Pen(Brushes.DeepPink, 2, new DashStyle([4, 4], 0));
+                double boundSz = Math.Max(24, (Math.Max(o.Scale.X, Math.Max(o.Scale.Y, o.Scale.Z)) * 400) / depth);
+                ctx.DrawRectangle(null, selPen, new Rect(centerPt.Value.X - boundSz / 2, centerPt.Value.Y - boundSz / 2, boundSz, boundSz), 4, 4);
+            }
+        }
     }
 
     protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
@@ -1154,27 +1563,11 @@ public sealed class ScenePreview : Control
 
         if (_vm is null) return;
 
-        // Hotkeys for Gizmo modes
-        if (e.Key == Key.W && !_isFlying) { _vm.SetGizmoMode("translate"); InvalidateVisual(); e.Handled = true; }
-        else if (e.Key == Key.E && !_isFlying) { _vm.SetGizmoMode("rotate"); InvalidateVisual(); e.Handled = true; }
-        else if (e.Key == Key.R && !_isFlying) { _vm.SetGizmoMode("scale"); InvalidateVisual(); e.Handled = true; }
-        else if (e.Key == Key.Q && !_isFlying) { _vm.SetGizmoMode("select"); InvalidateVisual(); e.Handled = true; }
-        else if (e.Key == Key.F) { FocusOnSelected(); e.Handled = true; }
-        else if (e.Key is Key.Delete or Key.Back) { _vm.DeleteSelectedCommand.Execute(null); e.Handled = true; }
-        else if (e.Key == Key.D && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)))
-        {
-            _vm.DuplicateSelected(); e.Handled = true;
-        }
-        else if (e.Key == Key.S && (e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Meta)))
-        {
-            _vm.SaveCommand.Execute(null); e.Handled = true;
-        }
-        else if (e.Key == Key.F5)
-        {
-            if (_vm.IsRunning) _vm.StopCommand.Execute(null);
-            else _vm.RunCommand.Execute(null);
+        // Во время полёта (ПКМ) WASD/QE управляют камерой — режимы гизмо не переключаем.
+        // Остальные горячие клавиши (Q/W/E/R/F, Delete, Ctrl/⌘+…) обрабатывает окно редактора,
+        // чтобы они работали одинаково из любой панели.
+        if (_isFlying && e.Key is Key.W or Key.A or Key.S or Key.D or Key.Q or Key.E)
             e.Handled = true;
-        }
     }
 
     protected override void OnKeyUp(KeyEventArgs e)

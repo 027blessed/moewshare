@@ -198,4 +198,31 @@ public class EngineTests : IDisposable
         Assert.Equal("jump", loadedBtn.UiAction);
         Assert.Equal("Прыжок", loadedBtn.UiText);
     }
+
+    [Fact]
+    public async Task Model3D_type_and_model_path_are_valid()
+    {
+        var folder = Path.Combine(_dir, "model_test");
+        await ProjectScaffolder.CreateAsync(folder, "ModelGame", "empty");
+        var scenePath = Path.Combine(folder, "Scenes", "Main.scene.json");
+        var scene = (await EngineJson.TryReadAsync<SceneDocument>(scenePath))!;
+        scene.Objects.Add(new SceneObject
+        {
+            Name = "HeroMesh",
+            Type = ObjectTypes.Model,
+            ModelPath = "Assets/Models/hero.obj",
+            Position = new(0, 0, 0),
+            Scale = new(1, 1, 1)
+        });
+        await EngineJson.SaveAtomicAsync(scenePath, scene);
+
+        var errors = await ProjectValidator.ValidateAsync(folder);
+        Assert.Empty(errors);
+
+        var loaded = await EngineJson.TryReadAsync<SceneDocument>(scenePath);
+        Assert.NotNull(loaded);
+        var hero = loaded.Objects.First(o => o.Name == "HeroMesh");
+        Assert.Equal(ObjectTypes.Model, hero.Type);
+        Assert.Equal("Assets/Models/hero.obj", hero.ModelPath);
+    }
 }

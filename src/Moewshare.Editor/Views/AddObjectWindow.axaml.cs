@@ -88,6 +88,16 @@ public partial class AddObjectWindow : Window
         },
         new()
         {
+            Id = "model",
+            Title = "3D Модель (Model)",
+            Category = "3D Объекты",
+            Icon = "🧊",
+            Description = "Трёхмерная модель из файла (obj, fbx, stl, glb, gltf) с коллизией",
+            TagColor = "#E8F4F8",
+            TagForeground = "#1B4F72"
+        },
+        new()
+        {
             Id = "sprite",
             Title = "2D Спрайт (Sprite)",
             Category = "2D & Спрайты",
@@ -221,6 +231,16 @@ public partial class AddObjectWindow : Window
         UpdateCategoryButtons();
         ApplyFilter();
 
+        // Клавиатура: Enter — создать выбранный, Esc — закрыть, ←/→ — выбор карточки
+        Opened += (_, _) => SearchBox.Focus();
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Enter) { CreateAndClose(); e.Handled = true; }
+            else if (e.Key == Key.Escape) { Close(); e.Handled = true; }
+            else if (e.Key == Key.Down || (e.Key == Key.Right && e.Source is not TextBox)) { MoveSelection(+1); e.Handled = true; }
+            else if (e.Key == Key.Up || (e.Key == Key.Left && e.Source is not TextBox)) { MoveSelection(-1); e.Handled = true; }
+        }, RoutingStrategies.Tunnel);
+
         // Default selection: Box
         var defaultItem = _displayTemplates.FirstOrDefault();
         if (defaultItem is not null)
@@ -326,4 +346,12 @@ public partial class AddObjectWindow : Window
     }
 
     void OnCancelClick(object? sender, RoutedEventArgs e) => Close();
+
+    void MoveSelection(int delta)
+    {
+        if (_displayTemplates.Count == 0) return;
+        var idx = _selectedTemplate is null ? -1 : _displayTemplates.IndexOf(_selectedTemplate);
+        idx = Math.Clamp(idx + delta, 0, _displayTemplates.Count - 1);
+        SelectTemplate(_displayTemplates[idx]);
+    }
 }
